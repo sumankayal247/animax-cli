@@ -1,0 +1,63 @@
+[project]
+name = "animax-cli"
+version = "0.1.0"
+description = "A modern, plugin-based terminal media CLI framework."
+readme = "README.md"
+license = "Apache-2.0"
+authors = [
+    { name = "Suman Kayal", email = "sumankayal247@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "typer>=0.15",
+    "rich>=13.9",
+    "httpx>=0.28",
+    "pydantic>=2.9",
+    "pydantic-settings>=2.6",
+    "platformdirs>=4.3",
+    "aiosqlite>=0.20",
+    "tomli-w>=1.1",
+]
+
+[project.scripts]
+anime = "animax.__main__:main"
+
+[project.entry-points."animax.plugins"]
+# Third-party plugins register here, e.g.:
+# anilist = "animax_plugin_anilist.plugin:AniListPlugin"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "ruff>=0.7",
+    "black>=24.10",
+    "mypy>=1.13",
+]
+
+[tool.uv.build-backend]
+module-name = "animax"
+
+[build-system]
+requires = ["uv_build>=0.12.0,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.black]
+line-length = 100
+target-version = ["py312"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unused_ignores = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"

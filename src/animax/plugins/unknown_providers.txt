@@ -1,0 +1,84 @@
+# =============================================================================
+# unknown_providers.txt — DEVELOPER BACKLOG ONLY
+# =============================================================================
+#
+# THIS FILE IS NEVER READ BY THE APPLICATION.
+#
+# It is a plain-text planning document for contributors: a place to jot down
+# candidate providers (metadata sources, download/streaming backends, players,
+# etc.) worth building a plugin for later. Animax-Cli's runtime never opens,
+# parses, or imports this file in any way — it exists purely for humans
+# planning future work.
+#
+# Do NOT list sites whose primary purpose is distributing copyrighted
+# material without authorization. This file is for legitimate, generic
+# provider ideas (official APIs, licensed catalogs, open metadata databases,
+# your own self-hosted server, etc.) — not a piracy source list.
+#
+# -----------------------------------------------------------------------------
+# HOW TO TURN AN ENTRY BELOW INTO A REAL PLUGIN
+# -----------------------------------------------------------------------------
+#
+# 1. Pick the right category and the ABC it must implement, from
+#    src/animax/core/interfaces/:
+#      - Metadata        -> animax.core.interfaces.metadata.MetadataPlugin
+#      - Search           -> animax.core.interfaces.search.SearchPlugin
+#      - Download         -> animax.core.interfaces.download.DownloadPlugin
+#      - Streaming        -> animax.core.interfaces.streaming.StreamingPlugin
+#      - Player           -> animax.core.interfaces.player.PlayerPlugin
+#      - Notification     -> animax.core.interfaces.notification.NotificationPlugin
+#      - Authentication   -> animax.core.interfaces.authentication.AuthenticationPlugin
+#
+# 2. Implement every abstract method the interface declares, plus the
+#    `info` property returning an animax.models.plugin.PluginInfo with:
+#      name, version, author, description, category, api_version
+#      (must be compatible with animax.core.constants.PLUGIN_API_VERSION),
+#      priority, capabilities.
+#
+# 3. Where it belongs in the tree:
+#      - Bundled/first-party plugins live under
+#        src/animax/plugins/<category>/<provider_name>.py
+#      - Third-party plugins ship as their own PyPI package and register
+#        under the "animax.plugins" entry-point group in their own
+#        pyproject.toml (see README.md "Plugins" section).
+#      - Users can also drop a single-file plugin into their user plugin
+#        directory (`anime config path`) with no packaging at all.
+#
+# 4. How to register it:
+#      - Bundled plugins are auto-discovered by directory scan — no
+#        manual registration step needed, just land the file in the
+#        right plugins/<category>/ directory.
+#      - Entry-point plugins register themselves via their package's
+#        [project.entry-points."animax.plugins"] table.
+#
+# 5. How to test it:
+#      - Add unit tests under tests/unit/plugins/<category>/ that
+#        exercise your plugin's public methods against mocked HTTP
+#        responses (httpx has a testing/mock transport) — no live network
+#        calls in the test suite.
+#      - Add it to `anime plugins` manually (uv run anime plugins) to
+#        confirm it loads, validates, and reports healthy.
+#
+# 6. Coding standards:
+#      - Full type hints; must pass `mypy --strict` and `ruff check`.
+#      - No blocking I/O — use httpx.AsyncClient, not requests.
+#      - Never raise a raw exception across the interface boundary; wrap
+#        provider-specific errors in animax.core.errors.PluginError (or a
+#        subclass) with a clear reason/fix.
+#      - Keep provider-specific parsing entirely inside the plugin —
+#        nothing outside animax.plugins.* should ever see a provider's
+#        native response shape, only animax.models.* types.
+#
+# -----------------------------------------------------------------------------
+# ENTRY TEMPLATE (copy this block per candidate provider)
+# -----------------------------------------------------------------------------
+#
+# Provider Name:
+# Homepage:
+# Category:
+# Authentication:
+# Priority:
+# Status:
+# Notes:
+#
+# -----------------------------------------------------------------------------
