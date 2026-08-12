@@ -51,3 +51,7 @@ class PluginVersionMismatchError(PluginError):
 
 class ServiceError(AnimaxError):
     """Raised for business-logic failures inside services/."""
+
+
+class UiError(AnimaxError):
+    """Raised for UI-specific failures."""

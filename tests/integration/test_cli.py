@@ -32,10 +32,6 @@ def test_help_flag_shows_usage() -> None:
 @pytest.mark.parametrize(
     "command",
     [
-        "search",
-        "info",
-        "episodes",
-        "download",
         "play",
         "library",
         "history",
@@ -47,7 +43,7 @@ def test_help_flag_shows_usage() -> None:
 )
 def test_unimplemented_commands_exit_cleanly(command: str) -> None:
     args = [command]
-    if command in {"search", "info", "episodes", "download", "play"}:
+    if command in {"download", "play"}:
         args.append("placeholder-id")
     result = runner.invoke(app, args)
     assert result.exit_code == 0
@@ -70,6 +66,7 @@ def test_doctor_all_pass(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Non
 
     assert result.exit_code == 0
     assert "FAIL" not in result.stdout
+    assert "Plugin manager" in result.stdout
 
 
 def test_config_path_and_show(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:

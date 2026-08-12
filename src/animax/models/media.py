@@ -8,7 +8,17 @@ models; nothing outside a plugin should ever see provider-native shapes.
 
 from __future__ import annotations
 
+from enum import Enum
 from pydantic import BaseModel, Field
+
+
+class MediaType(Enum):
+    ANIME = "Anime"
+    MOVIE = "Movie"
+    TV = "TV"
+    MANGA = "Manga"
+    NOVEL = "Novel"
+    UNKNOWN = "Unknown"
 
 
 class Episode(BaseModel):
@@ -27,6 +37,7 @@ class MediaItem(BaseModel):
 
     id: str
     title: str
+    media_type: MediaType = MediaType.ANIME
     alt_titles: list[str] = Field(default_factory=list)
     year: int | None = None
     episode_count: int | None = None

@@ -6,7 +6,10 @@ Animax-Cli is **not** a clone of any existing anime/media CLI. It's a general fr
 
 ## Status
 
-Early development (Phase 1 — project bootstrap). Not yet functional for end users.
+Early development (Phases 1–3 — bootstrap, core framework, terminal UI).
+Core infrastructure and a polished, reusable terminal UI are in place;
+no content providers exist yet, so search/download/play aren't
+functional for end users (see [docs/Roadmap.md](docs/Roadmap.md)).
 
 ## Requirements
 
@@ -19,11 +22,17 @@ Early development (Phase 1 — project bootstrap). Not yet functional for end us
 uv sync
 uv run anime --help
 uv run anime doctor
+uv run anime plugins
+uv run anime config show
+uv run anime about
 ```
+
+`--debug`, `--verbose`/`-v`, `--ascii`, `--no-color`, and `--no-animation`
+are global flags — see [docs/CLI-Commands.md](docs/CLI-Commands.md).
 
 ## Project layout
 
-See [docs/Architecture.md](docs/Architecture.md) for the full architecture and [docs/Developer-Guide.md](docs/Developer-Guide.md) for contributor setup.
+See [docs/Architecture.md](docs/Architecture.md) for the full architecture, [docs/Development-Principles.md](docs/Development-Principles.md) for the rules every change should hold to, and [docs/Developer-Guide.md](docs/Developer-Guide.md) for contributor setup.
 
 ## Plugins
 

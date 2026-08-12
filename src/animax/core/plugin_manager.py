@@ -28,6 +28,12 @@ from types import ModuleType
 
 from animax.core.constants import PLUGIN_ENTRY_POINT_GROUP
 from animax.core.errors import PluginValidationError, PluginVersionMismatchError
+from animax.core.events import default_bus, EventBus
+from animax.core.events.plugin_events import (
+    ProviderLoadedEvent,
+    ProviderRejectedEvent,
+    ProviderHealthChangedEvent,
+)
 from animax.core.interfaces import CATEGORY_INTERFACES, BasePlugin
 from animax.core.versioning import is_compatible
 from animax.models.plugin import HealthStatus, PluginInfo, PluginRecord, PluginSource
@@ -38,10 +44,17 @@ logger = logging.getLogger(__name__)
 class PluginManager:
     """Discovers, validates, and tracks the lifecycle of all plugins."""
 
-    def __init__(self, *, plugin_api_version: str, user_plugin_dir: Path | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        plugin_api_version: str,
+        user_plugin_dir: Path | None = None,
+        event_bus: EventBus | None = None,
+    ) -> None:
         self._plugin_api_version = plugin_api_version
         self._user_plugin_dir = user_plugin_dir
         self._registry: dict[str, PluginRecord] = {}
+        self._bus = event_bus or default_bus
 
     @property
     def registry(self) -> dict[str, PluginRecord]:
@@ -57,21 +70,28 @@ class PluginManager:
             records = [r for r in records if r.info.category.value == category]
         return sorted(records, key=lambda r: r.info.priority)
 
-    def load_all(self, *, builtin_package: str = "animax.plugins") -> list[str]:
+    async def load_all(self, *, builtin_package: str = "animax.plugins") -> list[str]:
         """Discover and load plugins from all sources in load order.
 
         Returns a list of human-readable warnings (rejected plugins,
         collisions) for the caller to surface, e.g. via ``anime plugins``.
         """
+        if self._registry:
+            return []
+            
         warnings: list[str] = []
         for instance in self._discover_builtin(builtin_package):
-            self._register(instance, PluginSource.BUILTIN, warnings)
+            await self._register(instance, PluginSource.BUILTIN, warnings)
         if self._user_plugin_dir is not None:
             for instance in self._discover_user_dir(self._user_plugin_dir):
-                self._register(instance, PluginSource.USER, warnings)
+                await self._register(instance, PluginSource.USER, warnings)
         for instance in self._discover_entry_points():
-            self._register(instance, PluginSource.ENTRY_POINT, warnings)
+            await self._register(instance, PluginSource.ENTRY_POINT, warnings)
         return warnings
+
+    async def reload(self) -> None:
+        self._registry.clear()
+        await self.load_all()
 
     # -- discovery ---------------------------------------------------
 
@@ -160,7 +180,7 @@ class PluginManager:
 
     # -- registration --------------------------------------------------
 
-    def _register(self, instance: BasePlugin, source: PluginSource, warnings: list[str]) -> None:
+    async def _register(self, instance: BasePlugin, source: PluginSource, warnings: list[str]) -> None:
         try:
             info = instance.info
         except Exception as exc:
@@ -173,6 +193,7 @@ class PluginManager:
         except (PluginValidationError, PluginVersionMismatchError) as exc:
             logger.warning("Rejected plugin %r: %s", info.name, exc)
             warnings.append(f"{info.name}: {exc}")
+            await self._bus.publish(ProviderRejectedEvent(plugin_name=info.name, reason=str(exc)))
             return
 
         existing = self._registry.get(info.name)
@@ -187,13 +208,15 @@ class PluginManager:
             logger.warning(msg)
             warnings.append(msg)
 
-        self._registry[info.name] = PluginRecord(
+        record = PluginRecord(
             info=info,
             instance=instance,
             source=source,
             enabled=True,
             health=HealthStatus.UNKNOWN,
         )
+        self._registry[info.name] = record
+        await self._bus.publish(ProviderLoadedEvent(record=record))
 
     def _validate(self, instance: BasePlugin, info: PluginInfo) -> None:
         interface = CATEGORY_INTERFACES.get(info.category.value)
@@ -221,12 +244,19 @@ class PluginManager:
             if not record.enabled:
                 record.health = HealthStatus.DISABLED
                 continue
+            prev_health = record.health
             try:
-                record.health = await record.instance.health_check()
+                is_healthy = await record.instance.check_health()
+                record.health = HealthStatus.HEALTHY if is_healthy else HealthStatus.UNHEALTHY
             except Exception as exc:
                 record.health = HealthStatus.UNHEALTHY
                 record.health_detail = str(exc)
                 logger.exception("Health check failed for plugin %r", name)
+            
+            if record.health != prev_health:
+                await self._bus.publish(
+                    ProviderHealthChangedEvent(record=record, previous_health=prev_health)
+                )
 
     def _require(self, name: str) -> PluginRecord:
         record = self._registry.get(name)

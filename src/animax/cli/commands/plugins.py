@@ -13,7 +13,8 @@ def register(app: typer.Typer) -> None:
     @app.command()
     def plugins() -> None:
         """List discovered plugins, their source, priority, and health."""
-        records, warnings = discover_plugins()
+        import asyncio
+        records, warnings = asyncio.run(discover_plugins())
         render_plugin_table(records)
         for warning in warnings:
             console.print(f"[animax.warning]Warning:[/] {warning}")

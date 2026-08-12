@@ -15,6 +15,7 @@ from animax.installer.checks import (
     check_database,
     check_directory_writable,
     check_python_version,
+    check_plugins,
 )
 
 
@@ -26,4 +27,5 @@ async def run_checks() -> list[CheckResult]:
         check_directory_writable("Data directory", config_paths.data_dir()),
         check_directory_writable("Log directory", config_paths.log_dir()),
         await check_database(),
+        await check_plugins(),
     ]

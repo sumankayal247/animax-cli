@@ -9,36 +9,44 @@ other subscribers — same error-isolation principle as the plugin system.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from collections import defaultdict
 from collections.abc import Awaitable, Callable
-from typing import Any
+from typing import Any, TypeVar
 
 logger = logging.getLogger(__name__)
 
-EventHandler = Callable[[Any], Awaitable[None]]
+TEvent = TypeVar("TEvent")
+EventHandler = Callable[[TEvent], Awaitable[None]]
 
 
 class EventBus:
-    """Simple publish/subscribe event bus keyed by event type name."""
+    """Simple publish/subscribe event bus keyed by event type."""
 
     def __init__(self) -> None:
-        self._handlers: dict[str, list[EventHandler]] = defaultdict(list)
+        self._handlers: dict[type, list[EventHandler[Any]]] = defaultdict(list)
 
-    def subscribe(self, event_name: str, handler: EventHandler) -> None:
-        self._handlers[event_name].append(handler)
+    def subscribe(self, event_type: type[TEvent], handler: EventHandler[TEvent]) -> None:
+        self._handlers[event_type].append(handler) # type: ignore
 
-    def unsubscribe(self, event_name: str, handler: EventHandler) -> None:
-        handlers = self._handlers.get(event_name)
+    def unsubscribe(self, event_type: type[TEvent], handler: EventHandler[TEvent]) -> None:
+        handlers = self._handlers.get(event_type)
         if handlers and handler in handlers:
-            handlers.remove(handler)
+            handlers.remove(handler) # type: ignore
 
-    async def publish(self, event_name: str, payload: Any = None) -> None:
-        for handler in list(self._handlers.get(event_name, ())):
+    async def publish(self, event: Any) -> None:
+        event_type = type(event)
+        handlers = list(self._handlers.get(event_type, ()))
+        
+        async def _run_handler(h: EventHandler[Any]) -> None:
             try:
-                await handler(payload)
+                await h(event)
             except Exception:
-                logger.exception("Event handler for %r raised an exception", event_name)
+                logger.exception("Event handler for %r raised an exception", event_type.__name__)
+
+        if handlers:
+            await asyncio.gather(*(_run_handler(h) for h in handlers))
 
 
 #: Process-wide default bus. Subsystems may also construct a private

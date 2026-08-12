@@ -64,3 +64,24 @@ async def check_database() -> CheckResult:
             detail=str(target),
             fix=f"Could not initialize the database: {exc}",
         )
+
+
+async def check_plugins() -> CheckResult:
+    from animax.services.plugin_service import discover_plugins
+    try:
+        records, warnings = await discover_plugins()
+        if warnings:
+            return CheckResult(
+                name="Plugin manager",
+                passed=False,
+                detail=f"{len(records)} loaded, {len(warnings)} warnings",
+                fix="Run `anime plugins` to see warnings.",
+            )
+        return CheckResult(name="Plugin manager", passed=True, detail=f"{len(records)} loaded")
+    except Exception as exc:
+        return CheckResult(
+            name="Plugin manager",
+            passed=False,
+            detail="Failed to load plugins",
+            fix=str(exc),
+        )

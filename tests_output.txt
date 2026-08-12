@@ -1,0 +1,14 @@
+ImportError while loading conftest '/home/shanvia/Desktop/Test Project/animax-cli/tests/conftest.py'.
+tests/conftest.py:5: in <module>
+    from animax.services.plugin_service import reset_plugin_manager
+src/animax/services/plugin_service.py:9: in <module>
+    from animax.core.plugin_manager import PluginManager
+src/animax/core/plugin_manager.py:38: in <module>
+    from animax.core.events import EventBus, default_bus
+src/animax/core/events/__init__.py:13: in <module>
+    from animax.core.events.download_events import (
+src/animax/core/events/download_events.py:15: in <module>
+    from animax.models.download import DownloadTask
+src/animax/models/__init__.py:6: in <module>
+    from animax.models.plugin import (
+E   ImportError: cannot import name 'PluginCategory' from 'animax.models.plugin' (/home/shanvia/Desktop/Test Project/animax-cli/src/animax/models/plugin.py)

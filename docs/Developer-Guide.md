@@ -19,6 +19,12 @@ plugin framework, `models/` is shared data shapes, everything else
 (`config/`, `database/`, `cache/`, `download/`, `library/`, `player/`,
 `installer/`, `ui/`) is a focused subsystem `services/` orchestrates.
 
+Before writing non-trivial code, read
+[Development-Principles.md](Development-Principles.md) — it's the short,
+imperative rule set (services orchestrate/plugins execute, models stay
+immutable, core never depends upward, etc.) that keeps the layers above
+from drifting into each other.
+
 ## Adding a new CLI command
 
 1. Create `src/animax/cli/commands/<name>.py` with a

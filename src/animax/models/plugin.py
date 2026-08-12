@@ -40,6 +40,19 @@ class HealthStatus(StrEnum):
     DISABLED = "disabled"
 
 
+class ProviderCapabilities(BaseModel):
+    """Structured capabilities advertised by a provider."""
+
+    model_config = ConfigDict(frozen=True)
+
+    search: bool = False
+    metadata: bool = False
+    episodes: bool = False
+    stream: bool = False
+    download: bool = False
+    magnet: bool = False
+
+
 class PluginInfo(BaseModel):
     """Static metadata a plugin declares about itself."""
 
@@ -52,7 +65,7 @@ class PluginInfo(BaseModel):
     category: PluginCategory
     api_version: str
     priority: int = 100
-    capabilities: frozenset[str] = Field(default_factory=frozenset)
+    capabilities: ProviderCapabilities = Field(default_factory=ProviderCapabilities)
 
 
 class PluginRecord(BaseModel):

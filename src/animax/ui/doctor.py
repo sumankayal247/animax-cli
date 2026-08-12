@@ -30,4 +30,10 @@ def render_doctor_results(results: list[CheckResult]) -> bool:
         table.add_row(result.name, status, detail)
 
     console.print(table)
+    
+    if all_passed:
+        console.print(f"[animax.success]All {len(results)} checks passed[/]")
+    else:
+        console.print("[animax.warning]Recommendations[/]")
+        
     return all_passed

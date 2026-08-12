@@ -10,10 +10,18 @@ from __future__ import annotations
 
 import json
 import time
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 from animax.config.paths import cache_dir
+
+
+@dataclass
+class CacheStats:
+    hits: int = 0
+    misses: int = 0
+    evictions: int = 0
 
 
 class Cache:
@@ -25,9 +33,12 @@ class Cache:
         *,
         directory: Path | None = None,
         default_ttl_seconds: int = 86_400,
+        max_size_bytes: int | None = None,
     ) -> None:
         self._dir = (directory or cache_dir()) / namespace
         self._default_ttl = default_ttl_seconds
+        self._max_size_bytes = max_size_bytes
+        self.stats = CacheStats()
 
     def _path_for(self, key: str) -> Path:
         safe_key = key.replace("/", "_")
@@ -36,28 +47,46 @@ class Cache:
     def get(self, key: str) -> Any | None:
         path = self._path_for(key)
         if not path.exists():
+            self.stats.misses += 1
             return None
         try:
             payload = json.loads(path.read_text())
         except (json.JSONDecodeError, OSError):
+            self.stats.misses += 1
             return None
         expires_at = payload.get("expires_at")
         if expires_at is not None and expires_at < time.time():
             path.unlink(missing_ok=True)
+            self.stats.misses += 1
             return None
+        self.stats.hits += 1
         return payload.get("value")
 
     def set(self, key: str, value: Any, *, ttl_seconds: int | None = None) -> None:
-        """Store ``value`` under ``key``.
-
-        ``ttl_seconds`` defaults to this cache's default TTL. Pass a
-        non-positive value to store an already-expired entry (useful for
-        tests, or to force the next read to refetch).
-        """
         self._dir.mkdir(parents=True, exist_ok=True)
         ttl = self._default_ttl if ttl_seconds is None else ttl_seconds
         payload = {"value": value, "expires_at": time.time() + ttl}
         self._path_for(key).write_text(json.dumps(payload))
+        
+        if self._max_size_bytes is not None:
+            self._enforce_size_limit()
+
+    def _enforce_size_limit(self) -> None:
+        if not self._dir.exists():
+            return
+        files = list(self._dir.glob("*.json"))
+        total_size = sum(f.stat().st_size for f in files)
+        if total_size <= self._max_size_bytes:
+            return
+            
+        files.sort(key=lambda f: f.stat().st_mtime)
+        for f in files:
+            size = f.stat().st_size
+            f.unlink(missing_ok=True)
+            self.stats.evictions += 1
+            total_size -= size
+            if total_size <= self._max_size_bytes:
+                break
 
     def clear(self) -> None:
         if not self._dir.exists():
@@ -66,7 +95,6 @@ class Cache:
             path.unlink(missing_ok=True)
 
     def cleanup_expired(self) -> int:
-        """Remove expired (or corrupt) entries. Returns the count removed."""
         if not self._dir.exists():
             return 0
         removed = 0

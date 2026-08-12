@@ -25,7 +25,7 @@ Environment variables override file values with an `ANIMAX_` prefix and
 
 ```toml
 schema_version = "1.0.0"
-theme = "default"
+theme = "auto"            # "auto" | "light" | "dark" | "ansi"
 language = "en"
 
 [player]
@@ -47,7 +47,20 @@ lifetime_seconds = 86400
 [logging]
 level = "INFO"
 debug = false
+
+[ui]
+accent_color = null       # e.g. "blue" — overrides the theme's default accent
+ascii_mode = null         # null = auto-detect from terminal capabilities
+animations = true         # master switch; still off in CI/non-TTY regardless
+banner = true              # startup wordmark on `anime about`
 ```
+
+`theme` accepts an old value from before Phase 3 too — a config file with
+`theme = "default"` (the pre-Phase-3 default) still loads fine and is
+treated the same as `"auto"` at resolution time
+(`ui.theme.resolve_theme_name`), not rejected. `--no-color`, `--ascii`,
+and `--no-animation` are CLI flags that always override whatever `ui.*`
+says for that one run. See docs/Architecture.md "UI framework (Phase 3)".
 
 ## Loading
 
