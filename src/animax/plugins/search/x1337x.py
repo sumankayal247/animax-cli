@@ -26,7 +26,7 @@ class Torrent1337xProvider(SearchProvider):
     async def check_health(self) -> bool:
         try:
             async with httpx.AsyncClient() as client:
-                resp = await client.get("https://1337x.to/", timeout=5.0)
+                resp = await client.get("https://1377x.to/", timeout=5.0)
                 return resp.status_code == 200
         except Exception:
             return False
@@ -47,7 +47,7 @@ class Torrent1337xProvider(SearchProvider):
         if quality:
             query += f" {quality}"
 
-        url = "https://1337x.to/search/" + urllib.parse.quote(query) + "/1/"
+        url = "https://1377x.to/search/" + urllib.parse.quote(query) + "/1/"
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36"
         }
@@ -58,16 +58,11 @@ class Torrent1337xProvider(SearchProvider):
                 if resp.status_code != 200:
                     return []
                     
-                # 1337x search results just link to torrent pages, which have the magnet.
-                # To make it fast without double-requesting, we can check if the search page
-                # itself exposes magnets (it usually doesn't).
-                # Actually, an easier alternative is x1337x API if available, 
-                # but for now we just scrape the first torrent page link we find.
                 torrent_link_match = re.search(r'href="(/torrent/[^"]+)"', resp.text)
                 if not torrent_link_match:
                     return []
                     
-                torrent_url = "https://1337x.to" + torrent_link_match.group(1)
+                torrent_url = "https://1377x.to" + torrent_link_match.group(1)
                 t_resp = await client.get(torrent_url, timeout=10.0)
                 magnet_match = re.search(r'(magnet:\?xt=urn:btih:[a-zA-Z0-9]+[^"]*)', t_resp.text)
                 

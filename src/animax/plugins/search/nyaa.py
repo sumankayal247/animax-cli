@@ -27,7 +27,7 @@ class NyaaProvider(SearchProvider):
 
     async def check_health(self) -> bool:
         async with httpx.AsyncClient() as client:
-            resp = await client.get("https://nyaa.si/", timeout=5.0)
+            resp = await client.get("https://nyaa.iss.one/", timeout=5.0)
             return resp.status_code == 200
 
     async def resolve_source(
@@ -48,7 +48,7 @@ class NyaaProvider(SearchProvider):
             query += f" {quality}"
 
         import urllib.parse
-        url = "https://nyaa.si/?page=rss&q=" + urllib.parse.quote(query) + "&c=1_2&f=0"
+        url = "https://nyaa.iss.one/?page=rss&q=" + urllib.parse.quote(query) + "&c=1_2&f=0"
         
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
