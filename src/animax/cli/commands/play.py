@@ -75,7 +75,9 @@ def register(app: typer.Typer) -> None:
                     return
                 else:
                     console.print(f"[green]Streaming Magnet link via Peerflix...[/green]")
+                    console.print(f"[yellow]Connecting to trackers and peers... (This may take a moment. If it hangs, your ISP might be blocking torrents.)[/yellow]")
                     import subprocess
+                    import sys
                     cmd = ["npx", "-y", "peerflix", best_source.url]
                     if player == "vlc":
                         cmd.append("--vlc")
@@ -83,7 +85,7 @@ def register(app: typer.Typer) -> None:
                         cmd.append("--mpv")
                         
                     try:
-                        subprocess.run(cmd)
+                        subprocess.run(cmd, stdin=sys.stdin, stdout=sys.stdout, stderr=sys.stderr)
                     except Exception as e:
                         console.print(f"[red]Error streaming media: {e}[/red]")
                     return
