@@ -48,13 +48,14 @@ def register(app: typer.Typer) -> None:
                 return
                 
             sources = []
-            for record in source_records:
-                source_plugin = record.instance
-                try:
-                    res = await source_plugin.resolve_source(item, episode)
-                    sources.extend(res)
-                except Exception:
-                    pass
+            with console.status("Resolving download sources..."):
+                for record in source_records:
+                    source_plugin = record.instance
+                    try:
+                        res = await source_plugin.resolve_source(item, episode)
+                        sources.extend(res)
+                    except Exception:
+                        pass
             
             if not sources:
                 console.print(f"[red]No downloadable sources found for Episode {episode}[/red]")
@@ -70,9 +71,22 @@ def register(app: typer.Typer) -> None:
             task = await engine.add_task(best_source, dest, media_id, episode)
             console.print(f"[yellow]Downloading to {dest}...[/yellow]")
             
-            # Wait for completion
-            while task.status in ("queued", "running"):
-                await asyncio.sleep(0.5)
+            # Wait for completion using a progress bar
+            from rich.progress import Progress, TextColumn, BarColumn, TaskProgressColumn
+            
+            with Progress(
+                TextColumn("[progress.description]{task.description}"),
+                BarColumn(),
+                TaskProgressColumn(),
+                console=console,
+            ) as progress:
+                pid = progress.add_task("[cyan]Downloading...", total=100.0)
+                
+                while task.status in ("queued", "running"):
+                    progress.update(pid, completed=task.progress)
+                    await asyncio.sleep(0.5)
+                    
+                progress.update(pid, completed=task.progress)
                 
             if task.status == "completed":
                 console.print("[bold green]Download Complete![/bold green]")

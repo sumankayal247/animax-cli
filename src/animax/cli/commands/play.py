@@ -54,15 +54,16 @@ def register(app: typer.Typer) -> None:
                 return
                 
             sources = []
-            for record in source_records:
-                source_plugin = record.instance
-                try:
-                    # If episode is None, it defaults to 1.0 just to get a source
-                    ep_num = float(episode) if episode else 1.0
-                    res = await source_plugin.resolve_source(item, ep_num)
-                    sources.extend(res)
-                except Exception:
-                    pass
+            with console.status("Resolving streaming sources..."):
+                for record in source_records:
+                    source_plugin = record.instance
+                    try:
+                        # If episode is None, it defaults to 1.0 just to get a source
+                        ep_num = float(episode) if episode else 1.0
+                        res = await source_plugin.resolve_source(item, ep_num)
+                        sources.extend(res)
+                    except Exception:
+                        pass
             
             if not sources:
                 console.print(f"[red]No playable sources found.[/red]")

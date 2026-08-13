@@ -93,13 +93,19 @@ class DownloadEngine:
         self.active_processes[task.id] = process
         
         # Read aria2c output to update progress (simplified)
+        import re
         if process.stdout:
             while True:
                 line = await process.stdout.readline()
                 if not line:
                     break
-                # Parse aria2c progress line here if needed
                 
+                text = line.decode('utf-8', errors='ignore')
+                # Parse aria2c progress line: e.g. [#2089b0 400MiB/1.2GiB(33%) CN:1 SD:1 DL:2.3MiB]
+                match = re.search(r'\((\d+)%\)', text)
+                if match:
+                    task.progress = float(match.group(1))
+                    
         await process.wait()
         self.active_processes.pop(task.id, None)
         
