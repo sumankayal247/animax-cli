@@ -186,33 +186,5 @@ class AniListProvider(MetadataProvider):
         except Exception:
             return []
 
-from animax.core.interfaces.base import BasePlugin
-from animax.core.plugin_manager import PluginManager
-from animax.core.provider_registry import ProviderRegistry
-from animax.models.plugin import PluginCategory, PluginInfo
 
-
-class AniListPlugin(BasePlugin):
-    @property
-    def info(self) -> PluginInfo:
-        return PluginInfo(
-            name="anilist_plugin",
-            description="Registers AniList provider.",
-            category=PluginCategory.METADATA,
-            version="1.0.0",
-            author="animax",
-            api_version="1.0.0"
-        )
-    async def setup(self, manager: PluginManager, registry: ProviderRegistry) -> None:
-        from animax.models.provider import ProviderRecord
-        provider = AniListProvider()
-        record = ProviderRecord(
-            info=provider.info,
-            instance=provider,
-            plugin_name=self.info.name,
-            enabled=True,
-            health=ProviderRecord.model_fields['health'].default
-        )
-        # Wait, registry.register requires PluginRecord but wait, it's ProviderRecord
-        registry.register(record)
 

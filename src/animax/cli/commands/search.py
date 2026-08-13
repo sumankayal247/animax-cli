@@ -78,16 +78,29 @@ def register(app: typer.Typer) -> None:
                 
             while True:
                 import questionary
+                from animax.models.media import MediaType
+                
+                is_movie = selected_item.media_type == MediaType.MOVIE
+                play_title = "Play Movie" if is_movie else "Play Episode"
+                download_title = "Download Movie" if is_movie else "Download Episode"
+                
+                choices = [
+                    questionary.Choice(title="Show Info", value="info"),
+                ]
+                
+                if not is_movie:
+                    choices.append(questionary.Choice(title="List Episodes", value="episodes"))
+                    
+                choices.extend([
+                    questionary.Choice(title=download_title, value="download"),
+                    questionary.Choice(title=play_title, value="play"),
+                    questionary.Choice(title="Go Back to Search Results", value="back"),
+                    questionary.Choice(title="Exit", value="exit"),
+                ])
+                
                 action = questionary.select(
                     f"What would you like to do with '{selected_item.title}'?",
-                    choices=[
-                        questionary.Choice(title="Show Info", value="info"),
-                        questionary.Choice(title="List Episodes", value="episodes"),
-                        questionary.Choice(title="Download Episode", value="download"),
-                        questionary.Choice(title="Play Episode", value="play"),
-                        questionary.Choice(title="Go Back to Search Results", value="back"),
-                        questionary.Choice(title="Exit", value="exit"),
-                    ]
+                    choices=choices
                 ).ask()
                 
                 if action == "exit" or action is None:
