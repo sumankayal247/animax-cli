@@ -73,16 +73,15 @@ def register(app: typer.Typer) -> None:
             
             if best_source.url.startswith("magnet:"):
                 import shutil
-                if not shutil.which("webtorrent"):
+                if not shutil.which("npx"):
                     console.print(f"\n[yellow]Warning:[/yellow] The best source found is a Torrent (Magnet link).")
-                    console.print(f"[red]To stream magnets instantly, you need 'webtorrent-cli' installed![/red]")
-                    console.print(f"\n[green]Install it with NodeJS:[/green] sudo npm install -g webtorrent-cli")
+                    console.print(f"[red]To stream magnets instantly, you need 'NodeJS' (npx) installed![/red]")
                     console.print(f"Or download it first using: [bold]anime download '{media_id}'" + (f" --episode {episode}" if episode else "") + "[/bold]\n")
                     return
                 else:
                     console.print(f"[green]Streaming Magnet link via WebTorrent...[/green]")
                     import subprocess
-                    cmd = ["webtorrent", "download", best_source.url]
+                    cmd = ["npx", "-y", "webtorrent", "download", best_source.url]
                     if player == "vlc":
                         cmd.append("--vlc")
                     else:
