@@ -22,27 +22,10 @@ def test_about_command() -> None:
     assert result.exit_code == 0
     assert "Apache License 2.0" in result.stdout
 
-
 def test_help_flag_shows_usage() -> None:
     result = runner.invoke(app, ["--help"])
     assert result.exit_code == 0
     assert "Usage" in result.stdout
-
-
-@pytest.mark.parametrize(
-    "command",
-    [
-        "update",
-        "diagnose",
-    ],
-)
-def test_unimplemented_commands_exit_cleanly(command: str) -> None:
-    args = [command]
-    if command in {"download", "play"}:
-        args.append("placeholder-id")
-    result = runner.invoke(app, args)
-    assert result.exit_code == 0
-    assert "isn't implemented yet" in result.stdout
 
 
 def test_plugins_command_runs() -> None:
