@@ -34,14 +34,27 @@ class NyaaProvider(SearchProvider):
         self, media: MediaItem, episode_num: float, quality: str | None = None
     ) -> list[ContentSource]:
         """Resolve a media item and episode into magnet links."""
-        # Clean title for search
-        query = f"{media.title} {int(episode_num):02d}"
+        from animax.models.media import MediaType
+        import re
+        
+        # Remove special characters that might break search
+        clean_title = re.sub(r'[^\w\s]', '', media.title)
+        query = clean_title
+        
+        if media.media_type != MediaType.MOVIE:
+            query += f" {int(episode_num):02d}"
+            
         if quality:
             query += f" {quality}"
 
-        url = "https://nyaa.si/?page=rss&q=" + httpx.quote(query) + "&c=1_2&f=0"
+        import urllib.parse
+        url = "https://nyaa.si/?page=rss&q=" + urllib.parse.quote(query) + "&c=1_2&f=0"
         
-        async with httpx.AsyncClient() as client:
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        }
+        
+        async with httpx.AsyncClient(headers=headers) as client:
             resp = await client.get(url, timeout=10.0)
             resp.raise_for_status()
             
