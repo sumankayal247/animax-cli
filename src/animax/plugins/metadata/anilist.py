@@ -199,6 +199,9 @@ class AniListPlugin(BasePlugin):
             name="anilist_plugin",
             description="Registers AniList provider.",
             category=PluginCategory.METADATA,
+            version="1.0.0",
+            author="animax",
+            api_version="1.0.0"
         )
     async def setup(self, manager: PluginManager, registry: ProviderRegistry) -> None:
         from animax.models.provider import ProviderRecord
