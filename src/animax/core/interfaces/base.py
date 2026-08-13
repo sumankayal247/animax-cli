@@ -34,10 +34,10 @@ class BasePlugin(ABC):
         """
         return None
 
-    async def health_check(self) -> HealthStatus:
+    async def check_health(self) -> bool:
         """Report this plugin's current health.
 
         Default assumes healthy; plugins that depend on external services
         (an API, a player binary) should override this with a real check.
         """
-        return HealthStatus.HEALTHY
+        return True
