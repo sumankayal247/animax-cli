@@ -56,7 +56,7 @@ class AniListProvider(MetadataProvider):
     async def search(self, query: str) -> list[SearchResult]:
         query_str = """
         query ($search: String) {
-          Page(page: 1, perPage: 10) {
+          Page(page: 1, perPage: 25) {
             media(search: $search, type: ANIME) {
               id
               title { romaji english }

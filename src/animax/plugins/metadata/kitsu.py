@@ -57,7 +57,7 @@ class KitsuProvider(MetadataProvider):
         try:
             async with httpx.AsyncClient() as client:
                 resp = await client.get(
-                    f"https://kitsu.io/api/edge/anime?filter[text]={query}",
+                    f"https://kitsu.io/api/edge/anime?filter[text]={query}&page[limit]=20",
                     timeout=10.0,
                 )
                 resp.raise_for_status()

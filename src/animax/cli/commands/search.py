@@ -95,36 +95,58 @@ def register(app: typer.Typer) -> None:
                 elif action == "back":
                     break
                 elif action == "download":
-                    ep_num = questionary.text("Enter episode number to download (e.g. 1):").ask()
-                    if ep_num and ep_num.replace(".", "").isdigit():
-                        console.print(f"\n[green]To download, run:[/] [bold]anime download '{selected_item.id}' --episode {ep_num}[/bold]")
-                        console.print("[dim](Or implement direct downloading here in the future)[/dim]\n")
-                elif action == "play":
-                    ep_num = questionary.text("Enter episode number to play (e.g. 1):").ask()
-                    if ep_num and ep_num.replace(".", "").isdigit():
-                        console.print(f"\n[green]To play, run:[/] [bold]anime play '{selected_item.id}' --episode {ep_num}[/bold]")
-                        console.print("[dim](Or implement direct playing here in the future)[/dim]\n")
+                    from animax.models.media import MediaType
+                    if selected_item.media_type == MediaType.MOVIE:
+                        console.print(f"\n[green]To download this movie, run:[/] [bold]anime download '{selected_item.id}'[/bold]")
+                    else:
+                        ep_num = questionary.text("Enter episode number to download (e.g. 1):").ask()
+                        if ep_num and ep_num.replace(".", "").isdigit():
+                            console.print(f"\n[green]To download, run:[/] [bold]anime download '{selected_item.id}' --episode {ep_num}[/bold]")
+                            console.print("[dim](Or implement direct downloading here in the future)[/dim]\n")
                 elif action == "info":
                     with console.status("Fetching details..."):
                         try:
-                            # Prefer the first source plugin of the item
-                            details = asyncio.run(get_details(selected_item.id, provider=selected_item.source_plugins[0] if selected_item.source_plugins else None))
+                            from animax.services.plugin_service import get_provider_registry
+                            registry = get_provider_registry()
+                            metadata_records = [r for r in registry.enabled() if r.info.category.value == "metadata"]
+                            if not metadata_records:
+                                console.print("[red]No metadata plugins enabled![/red]")
+                                continue
+                            meta_plugin = metadata_records[0].instance
+                            details = asyncio.run(meta_plugin.get_details(selected_item.id))
+                            
                             console.print(f"\n[bold cyan]{details.title}[/bold cyan]")
                             console.print(f"[yellow]Synopsis:[/] {details.synopsis or 'No synopsis available.'}")
                             console.print(f"[yellow]Year:[/] {details.year}")
-                            console.print(f"[yellow]Episodes:[/] {details.episode_count}\n")
+                            if details.media_type.value != "Movie":
+                                console.print(f"[yellow]Episodes:[/] {details.episode_count}\n")
+                            else:
+                                console.print("[yellow]Type:[/] Movie\n")
                         except Exception as e:
                             console.print(f"[red]Failed to fetch details:[/] {e}")
                 elif action == "episodes":
                     with console.status("Fetching episodes..."):
                         try:
-                            eps = asyncio.run(get_episodes(selected_item.id, provider=selected_item.source_plugins[0] if selected_item.source_plugins else None))
-                            if not eps:
-                                console.print("[yellow]No episodes found.[/yellow]")
-                            else:
+                            from animax.services.plugin_service import get_provider_registry
+                            registry = get_provider_registry()
+                            metadata_records = [r for r in registry.enabled() if r.info.category.value == "metadata"]
+                            if not metadata_records:
+                                console.print("[red]No metadata plugins enabled![/red]")
+                                continue
+                            meta_plugin = metadata_records[0].instance
+                            eps = asyncio.run(meta_plugin.get_episodes(selected_item.id))
+                            
+                            if eps:
                                 console.print(f"\n[bold cyan]Episodes for {selected_item.title}:[/bold cyan]")
                                 for ep in eps:
-                                    console.print(f"  [green]Episode {ep.number}[/green]: {ep.title or 'No title'}")
+                                    console.print(f"  {ep.number:02g}. {ep.title or 'Episode ' + str(ep.number)}")
                                 console.print()
+                            else:
+                                console.print("\n[yellow]No episodes found.[/yellow]\n")
                         except Exception as e:
                             console.print(f"[red]Failed to fetch episodes:[/] {e}")
+                elif action == "play":
+                    ep_num = questionary.text("Enter episode number to play (e.g. 1):").ask()
+                    if ep_num and ep_num.replace(".", "").isdigit():
+                        console.print(f"\n[green]To play, run:[/] [bold]anime play '{selected_item.id}' --episode {ep_num}[/bold]")
+                        console.print("[dim](Or implement direct playing here in the future)[/dim]\n")
