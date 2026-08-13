@@ -17,6 +17,7 @@ dependencies = [
     "platformdirs>=4.3",
     "aiosqlite>=0.20",
     "tomli-w>=1.1",
+    "questionary>=2.1.1",
 ]
 
 [project.scripts]
