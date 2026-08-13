@@ -72,14 +72,31 @@ def register(app: typer.Typer) -> None:
             best_source = sources[0]
             
             if best_source.url.startswith("magnet:"):
-                console.print(f"\n[yellow]Warning:[/yellow] The best source found is a Torrent (Magnet link).")
-                console.print(f"[red]MPV and VLC cannot stream raw magnet links directly yet![/red]")
-                console.print(f"\n[green]Please download it first using:[/green]")
-                console.print(f"  [bold]anime download '{media_id}'" + (f" --episode {episode}" if episode else "") + "[/bold]\n")
-                return
+                import shutil
+                if not shutil.which("webtorrent"):
+                    console.print(f"\n[yellow]Warning:[/yellow] The best source found is a Torrent (Magnet link).")
+                    console.print(f"[red]To stream magnets instantly, you need 'webtorrent-cli' installed![/red]")
+                    console.print(f"\n[green]Install it with NodeJS:[/green] sudo npm install -g webtorrent-cli")
+                    console.print(f"Or download it first using: [bold]anime download '{media_id}'" + (f" --episode {episode}" if episode else "") + "[/bold]\n")
+                    return
+                else:
+                    console.print(f"[green]Streaming Magnet link via WebTorrent...[/green]")
+                    import subprocess
+                    cmd = ["webtorrent", "download", best_source.url]
+                    if player == "vlc":
+                        cmd.append("--vlc")
+                    else:
+                        cmd.append("--mpv")
+                        
+                    try:
+                        subprocess.run(cmd)
+                    except Exception as e:
+                        console.print(f"[red]Error streaming media: {e}[/red]")
+                    return
 
             console.print(f"[green]Playing source from {best_source.plugin}...[/green]")
             try:
+                from animax.services.player_service import play_media
                 await play_media(best_source.url, preferred_player=player)
             except Exception as e:
                 console.print(f"[red]Error playing media: {e}[/red]")
