@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import httpx
 
-from animax.core.interfaces.metadata import MetadataProvider
+from animax.core.interfaces.metadata import MetadataPlugin
 from animax.models.media import Episode, MediaItem, MediaType, SearchResult
-from animax.models.plugin import ProviderCategory, PluginInfo, ProviderCapabilities
+from animax.models.plugin import PluginCategory, PluginInfo, ProviderCapabilities
 
 
 def _map_anilist_format(fmt: str | None) -> MediaType:
@@ -27,13 +27,13 @@ def _map_anilist_format(fmt: str | None) -> MediaType:
             return MediaType.UNKNOWN
 
 
-class AniListPlugin(MetadataProvider):
+class AniListPlugin(MetadataPlugin):
     @property
     def info(self) -> PluginInfo:
         return PluginInfo(
             name="anilist",
             version="1.0.0",
-            category=ProviderCategory.METADATA,
+            category=PluginCategory.METADATA,
             api_version="1.0.0",
             author="animax",
             description="Fetches metadata from AniList.",

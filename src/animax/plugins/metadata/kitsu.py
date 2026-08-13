@@ -6,9 +6,9 @@ import contextlib
 
 import httpx
 
-from animax.core.interfaces.metadata import MetadataProvider
+from animax.core.interfaces.metadata import MetadataPlugin
 from animax.models.media import Episode, MediaItem, MediaType, SearchResult
-from animax.models.plugin import ProviderCategory, PluginInfo, ProviderCapabilities
+from animax.models.plugin import PluginCategory, PluginInfo, ProviderCapabilities
 
 
 def _map_kitsu_subtype(subtype: str | None) -> MediaType:
@@ -32,13 +32,13 @@ def _map_kitsu_subtype(subtype: str | None) -> MediaType:
             return MediaType.UNKNOWN
 
 
-class KitsuMetadataProvider(MetadataProvider):
+class KitsuPlugin(MetadataPlugin):
     @property
     def info(self) -> PluginInfo:
         return PluginInfo(
             name="kitsu",
             version="1.0.0",
-            category=ProviderCategory.METADATA,
+            category=PluginCategory.METADATA,
             api_version="1.0.0",
             author="animax",
             capabilities=ProviderCapabilities(metadata=True, search=True),

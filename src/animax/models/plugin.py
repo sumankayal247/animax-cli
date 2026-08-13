@@ -24,6 +24,7 @@ class PluginCategory(StrEnum):
     NOTIFICATION = "notification"
     AUTHENTICATION = "authentication"
     SEARCH = "search"
+    SOURCE = "source"
 
 
 class PluginSource(StrEnum):

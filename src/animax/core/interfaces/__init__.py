@@ -11,6 +11,7 @@ from animax.core.interfaces.metadata import MetadataPlugin
 from animax.core.interfaces.notification import NotificationLevel, NotificationPlugin
 from animax.core.interfaces.player import PlayerPlugin
 from animax.core.interfaces.search import SearchPlugin
+from animax.core.interfaces.source import SourcePlugin
 from animax.core.interfaces.streaming import StreamingPlugin
 
 __all__ = [
@@ -22,6 +23,7 @@ __all__ = [
     "NotificationPlugin",
     "PlayerPlugin",
     "SearchPlugin",
+    "SourcePlugin",
     "StreamingPlugin",
 ]
 
@@ -40,5 +42,6 @@ CATEGORY_INTERFACES = cast(
         "notification": NotificationPlugin,
         "authentication": AuthenticationPlugin,
         "search": SearchPlugin,
+        "source": SourcePlugin,
     },
 )
