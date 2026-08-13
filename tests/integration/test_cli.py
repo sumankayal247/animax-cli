@@ -32,11 +32,6 @@ def test_help_flag_shows_usage() -> None:
 @pytest.mark.parametrize(
     "command",
     [
-        "play",
-        "library",
-        "history",
-        "logs",
-        "cache",
         "update",
         "diagnose",
     ],

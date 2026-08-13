@@ -78,6 +78,10 @@ def register(app: typer.Typer) -> None:
                 
             if task.status == "completed":
                 console.print("[bold green]Download Complete![/bold green]")
+                from animax.services.history_service import log_event
+                from animax.services.library_service import update_progress
+                await log_event(media_id, item.title, episode, "Download", best_source.plugin)
+                await update_progress(media_id, item.title, episode, 0.0, best_source.plugin)
             else:
                 console.print(f"[bold red]Download failed: {task.error}[/bold red]")
                 

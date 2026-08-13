@@ -36,7 +36,15 @@ app = typer.Typer(
 def main_callback(
     debug: bool = typer.Option(False, "--debug", help="Enable debug logging and tracebacks."),
 ) -> None:
+    import asyncio
+    from animax.database.connection import initialize
     configure_logging(debug=debug)
+    
+    try:
+        asyncio.run(initialize())
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning(f"Failed to initialize database: {e}")
 
 
 _COMMAND_MODULES = (

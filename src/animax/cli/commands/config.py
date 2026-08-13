@@ -31,7 +31,12 @@ def set_value(
     value: str = typer.Argument(..., help="New value."),
 ) -> None:
     """Set a configuration value."""
-    not_yet_implemented("anime config set", "Phase 6 (configuration polish)")
+    from animax.services.config_service import update_setting
+    try:
+        update_setting(key, value)
+        console.print(f"[green]Successfully set '{key}' to '{value}'.[/green]")
+    except Exception as e:
+        console.print(f"[red]Failed to set config:[/red] {e}")
 
 
 def register(app: typer.Typer) -> None:
