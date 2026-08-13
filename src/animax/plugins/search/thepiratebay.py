@@ -64,13 +64,38 @@ class ThePirateBayProvider(SearchProvider):
                         info_hash = item.get("info_hash")
                         name = item.get("name")
                         if info_hash and info_hash != "0000000000000000000000000000000000000000":
-                            # Use HTTP and WSS trackers to bypass UDP torrent blocks
-                            trackers = (
-                                "&tr=http%3A%2F%2Ftracker.opentrackr.org%3A1337%2Fannounce"
-                                "&tr=http%3A%2F%2Ftracker.bt4g.com%3A2095%2Fannounce"
-                                "&tr=wss%3A%2F%2Ftracker.btorrent.xyz"
-                                "&tr=wss%3A%2F%2Ftracker.openwebtorrent.com"
-                            )
+                            # Use DNS over HTTPS (DoH) to bypass ISP DNS blocking
+                            # We resolve the trackers dynamically to their raw IPs
+                            import asyncio
+                            
+                            async def resolve_tracker(domain: str, port: int, client) -> str | None:
+                                try:
+                                    doh_url = f"https://dns.google/resolve?name={domain}&type=A"
+                                    r = await client.get(doh_url, timeout=3.0)
+                                    ans = r.json().get("Answer", [])
+                                    if ans:
+                                        ip = ans[0].get("data")
+                                        if ip:
+                                            # Using raw IP for UDP completely bypasses DNS and SNI checks
+                                            return f"&tr=udp%3A%2F%2F{ip}%3A{port}%2Fannounce"
+                                except Exception:
+                                    pass
+                                return None
+
+                            trackers_to_resolve = [
+                                ("tracker.opentrackr.org", 1337),
+                                ("open.stealth.si", 80),
+                                ("tracker.torrent.eu.org", 451),
+                                ("explodie.org", 6969),
+                            ]
+                            
+                            tasks = [resolve_tracker(d, p, client) for d, p in trackers_to_resolve]
+                            resolved = await asyncio.gather(*tasks)
+                            
+                            trackers = "".join([t for t in resolved if t])
+                            # Also append WSS trackers which use standard HTTPS and are rarely blocked
+                            trackers += "&tr=wss%3A%2F%2Ftracker.btorrent.xyz&tr=wss%3A%2F%2Ftracker.openwebtorrent.com"
+                            
                             magnet = f"magnet:?xt=urn:btih:{info_hash}&dn={urllib.parse.quote(name)}{trackers}"
                             sources.append(ContentSource(
                                 url=magnet,
