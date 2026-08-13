@@ -31,20 +31,47 @@ def register(app: typer.Typer) -> None:
             console.print("[yellow]No results found.[/yellow]")
             return
             
+        from textual.app import App, ComposeResult
+        from textual.widgets import DataTable, Footer, Header
+        from textual.binding import Binding
+
+        class SearchSelectionApp(App):
+            CSS = "DataTable { height: 100%; }"
+            BINDINGS = [
+                Binding("escape", "quit", "Quit", show=True),
+            ]
+
+            def __init__(self, results):
+                super().__init__()
+                self.results_data = results
+                self.selected_item = None
+
+            def compose(self) -> ComposeResult:
+                yield Header(show_clock=False)
+                yield DataTable(cursor_type="row")
+                yield Footer()
+
+            def on_mount(self) -> None:
+                table = self.query_one(DataTable)
+                table.add_columns("Title", "Year", "Episodes", "Sources")
+                for idx, r in enumerate(self.results_data):
+                    table.add_row(
+                        r.item.title,
+                        str(r.item.year) if r.item.year else "—",
+                        str(r.item.episode_count) if r.item.episode_count else "—",
+                        ", ".join(r.item.source_plugins) or "—",
+                        key=str(idx)
+                    )
+                table.focus()
+
+            def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
+                idx = int(event.row_key.value)
+                self.selected_item = self.results_data[idx].item
+                self.exit(self.selected_item)
+
         while True:
-            choices = []
-            for r in results:
-                title = r.item.title
-                year = r.item.year or "—"
-                eps = r.item.episode_count or "—"
-                choices.append(questionary.Choice(title=f"{title} ({year}) - {eps} eps", value=r.item))
-            
-            choices.append(questionary.Choice(title="[Exit]", value=None))
-            
-            selected_item = questionary.select(
-                "Select a media item to explore:",
-                choices=choices
-            ).ask()
+            app_ui = SearchSelectionApp(results)
+            selected_item = app_ui.run()
             
             if not selected_item:
                 break

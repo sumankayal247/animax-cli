@@ -18,6 +18,7 @@ dependencies = [
     "aiosqlite>=0.20",
     "tomli-w>=1.1",
     "questionary>=2.1.1",
+    "textual>=8.2.8",
 ]
 
 [project.scripts]
