@@ -165,10 +165,10 @@ async def get_details(item_id: str, provider: str | None = None) -> MediaItem:
 
     target_plugin = None
     if provider:
-        target_plugin = next((r.plugin for r in enabled if r.info.name == provider), None)
+        target_plugin = next((r.instance for r in enabled if r.info.name == provider), None)
     else:
         # Just pick the first available metadata plugin
-        target_plugin = enabled[0].plugin if enabled else None
+        target_plugin = enabled[0].instance if enabled else None
 
     if not isinstance(target_plugin, MetadataProvider):
         error = "No suitable metadata plugin found"
@@ -198,9 +198,9 @@ async def get_episodes(item_id: str, provider: str | None = None) -> list[Episod
 
     target_plugin = None
     if provider:
-        target_plugin = next((r.plugin for r in enabled if r.info.name == provider), None)
+        target_plugin = next((r.instance for r in enabled if r.info.name == provider), None)
     else:
-        target_plugin = enabled[0].plugin if enabled else None
+        target_plugin = enabled[0].instance if enabled else None
 
     if not isinstance(target_plugin, MetadataProvider):
         error = "No suitable metadata plugin found"

@@ -77,11 +77,14 @@ def register(app: typer.Typer) -> None:
                 break
                 
             while True:
+                import questionary
                 action = questionary.select(
                     f"What would you like to do with '{selected_item.title}'?",
                     choices=[
                         questionary.Choice(title="Show Info", value="info"),
                         questionary.Choice(title="List Episodes", value="episodes"),
+                        questionary.Choice(title="Download Episode", value="download"),
+                        questionary.Choice(title="Play Episode", value="play"),
                         questionary.Choice(title="Go Back to Search Results", value="back"),
                         questionary.Choice(title="Exit", value="exit"),
                     ]
@@ -91,6 +94,16 @@ def register(app: typer.Typer) -> None:
                     return
                 elif action == "back":
                     break
+                elif action == "download":
+                    ep_num = questionary.text("Enter episode number to download (e.g. 1):").ask()
+                    if ep_num and ep_num.replace(".", "").isdigit():
+                        console.print(f"\n[green]To download, run:[/] [bold]anime download '{selected_item.id}' --episode {ep_num}[/bold]")
+                        console.print("[dim](Or implement direct downloading here in the future)[/dim]\n")
+                elif action == "play":
+                    ep_num = questionary.text("Enter episode number to play (e.g. 1):").ask()
+                    if ep_num and ep_num.replace(".", "").isdigit():
+                        console.print(f"\n[green]To play, run:[/] [bold]anime play '{selected_item.id}' --episode {ep_num}[/bold]")
+                        console.print("[dim](Or implement direct playing here in the future)[/dim]\n")
                 elif action == "info":
                     with console.status("Fetching details..."):
                         try:
