@@ -96,13 +96,14 @@ def register(app: typer.Typer) -> None:
                     break
                 elif action == "download":
                     from animax.models.media import MediaType
+                    import subprocess
+                    import sys
                     if selected_item.media_type == MediaType.MOVIE:
-                        console.print(f"\n[green]To download this movie, run:[/] [bold]anime download '{selected_item.id}'[/bold]")
+                        subprocess.run([sys.argv[0], "download", selected_item.id])
                     else:
                         ep_num = questionary.text("Enter episode number to download (e.g. 1):").ask()
                         if ep_num and ep_num.replace(".", "").isdigit():
-                            console.print(f"\n[green]To download, run:[/] [bold]anime download '{selected_item.id}' --episode {ep_num}[/bold]")
-                            console.print("[dim](Or implement direct downloading here in the future)[/dim]\n")
+                            subprocess.run([sys.argv[0], "download", selected_item.id, "--episode", ep_num])
                 elif action == "info":
                     with console.status("Fetching details..."):
                         try:
@@ -134,7 +135,12 @@ def register(app: typer.Typer) -> None:
                         except Exception as e:
                             console.print(f"[red]Failed to fetch episodes:[/] {e}")
                 elif action == "play":
-                    ep_num = questionary.text("Enter episode number to play (e.g. 1):").ask()
-                    if ep_num and ep_num.replace(".", "").isdigit():
-                        console.print(f"\n[green]To play, run:[/] [bold]anime play '{selected_item.id}' --episode {ep_num}[/bold]")
-                        console.print("[dim](Or implement direct playing here in the future)[/dim]\n")
+                    from animax.models.media import MediaType
+                    import subprocess
+                    import sys
+                    if selected_item.media_type == MediaType.MOVIE:
+                        subprocess.run([sys.argv[0], "play", selected_item.id])
+                    else:
+                        ep_num = questionary.text("Enter episode number to play (e.g. 1):").ask()
+                        if ep_num and ep_num.replace(".", "").isdigit():
+                            subprocess.run([sys.argv[0], "play", selected_item.id, "--episode", ep_num])
