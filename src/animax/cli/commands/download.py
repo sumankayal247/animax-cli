@@ -27,14 +27,9 @@ def register(app: typer.Typer) -> None:
             await discover_plugins()
             
             # Find a metadata plugin to get details
-            metadata_records = [r for r in registry.enabled() if r.info.category.value == "metadata"]
-            if not metadata_records:
-                console.print("[red]No metadata plugins enabled![/red]")
-                return
-            
-            meta_plugin = metadata_records[0].instance
             try:
-                item = await meta_plugin.get_details(media_id)
+                from animax.services.metadata_service import get_details
+                item = await get_details(media_id)
             except Exception as e:
                 console.print(f"[red]Failed to fetch metadata for {media_id}: {e}[/red]")
                 return

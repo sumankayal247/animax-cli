@@ -156,67 +156,82 @@ async def resolve_query(query: str, exact: bool = False) -> list[SearchResult]:
 
 
 async def get_details(item_id: str, provider: str | None = None) -> MediaItem:
-    """Get rich metadata details for an item from a specific provider."""
+    """Get rich metadata details for an item from a specific provider, or try all."""
     await default_bus.publish(MetadataDetailsStarted(item_id=item_id))
 
     await discover_plugins()
     records = get_provider_registry().enabled()
     enabled = [r for r in records if r.info.category.value == "metadata"]
 
-    target_plugin = None
+    target_plugins = []
     if provider:
-        target_plugin = next((r.instance for r in enabled if r.info.name == provider), None)
+        target = next((r.instance for r in enabled if r.info.name == provider), None)
+        if target:
+            target_plugins.append(target)
     else:
-        # Just pick the first available metadata plugin
-        target_plugin = enabled[0].instance if enabled else None
+        target_plugins = [r.instance for r in enabled]
 
-    if not isinstance(target_plugin, MetadataProvider):
+    if not target_plugins:
         error = "No suitable metadata plugin found"
         await default_bus.publish(
             MetadataDetailsCompleted(item_id=item_id, success=False, error=error)
         )
         raise RuntimeError(error)
 
-    try:
-        details = await target_plugin.get_details(item_id)
-        await default_bus.publish(MetadataDetailsCompleted(item_id=item_id, success=True))
-        return details
-    except Exception as e:
-        await default_bus.publish(
-            MetadataDetailsCompleted(item_id=item_id, success=False, error=str(e))
-        )
-        raise
+    last_error = None
+    for plugin in target_plugins:
+        try:
+            details = await plugin.get_details(item_id)
+            await default_bus.publish(MetadataDetailsCompleted(item_id=item_id, success=True))
+            return details
+        except Exception as e:
+            last_error = e
+            continue
+
+    error_msg = str(last_error) if last_error else "Failed to fetch details from any provider."
+    await default_bus.publish(
+        MetadataDetailsCompleted(item_id=item_id, success=False, error=error_msg)
+    )
+    raise last_error or RuntimeError(error_msg)
 
 
 async def get_episodes(item_id: str, provider: str | None = None) -> list[Episode]:
-    """Get episodes for an item from a specific provider."""
+    """Get episodes for an item from a specific provider, or try all."""
     await default_bus.publish(EpisodesRequested(item_id=item_id))
 
     await discover_plugins()
     records = get_provider_registry().enabled()
     enabled = [r for r in records if r.info.category.value == "metadata"]
 
-    target_plugin = None
+    target_plugins = []
     if provider:
-        target_plugin = next((r.instance for r in enabled if r.info.name == provider), None)
+        target = next((r.instance for r in enabled if r.info.name == provider), None)
+        if target:
+            target_plugins.append(target)
     else:
-        target_plugin = enabled[0].instance if enabled else None
+        target_plugins = [r.instance for r in enabled]
 
-    if not isinstance(target_plugin, MetadataProvider):
+    if not target_plugins:
         error = "No suitable metadata plugin found"
         await default_bus.publish(
             EpisodesCompleted(item_id=item_id, episode_count=0, success=False, error=error)
         )
         raise RuntimeError(error)
 
-    try:
-        episodes = await target_plugin.get_episodes(item_id)
-        await default_bus.publish(
-            EpisodesCompleted(item_id=item_id, episode_count=len(episodes), success=True)
-        )
-        return episodes
-    except Exception as e:
-        await default_bus.publish(
-            EpisodesCompleted(item_id=item_id, episode_count=0, success=False, error=str(e))
-        )
-        raise
+    last_error = None
+    for plugin in target_plugins:
+        try:
+            episodes = await plugin.get_episodes(item_id)
+            await default_bus.publish(
+                EpisodesCompleted(item_id=item_id, episode_count=len(episodes), success=True)
+            )
+            return episodes
+        except Exception as e:
+            last_error = e
+            continue
+
+    error_msg = str(last_error) if last_error else "Failed to fetch episodes from any provider."
+    await default_bus.publish(
+        EpisodesCompleted(item_id=item_id, episode_count=0, success=False, error=error_msg)
+    )
+    raise last_error or RuntimeError(error_msg)

@@ -106,14 +106,8 @@ def register(app: typer.Typer) -> None:
                 elif action == "info":
                     with console.status("Fetching details..."):
                         try:
-                            from animax.services.plugin_service import get_provider_registry
-                            registry = get_provider_registry()
-                            metadata_records = [r for r in registry.enabled() if r.info.category.value == "metadata"]
-                            if not metadata_records:
-                                console.print("[red]No metadata plugins enabled![/red]")
-                                continue
-                            meta_plugin = metadata_records[0].instance
-                            details = asyncio.run(meta_plugin.get_details(selected_item.id))
+                            from animax.services.metadata_service import get_details
+                            details = asyncio.run(get_details(selected_item.id))
                             
                             console.print(f"\n[bold cyan]{details.title}[/bold cyan]")
                             console.print(f"[yellow]Synopsis:[/] {details.synopsis or 'No synopsis available.'}")
@@ -127,14 +121,8 @@ def register(app: typer.Typer) -> None:
                 elif action == "episodes":
                     with console.status("Fetching episodes..."):
                         try:
-                            from animax.services.plugin_service import get_provider_registry
-                            registry = get_provider_registry()
-                            metadata_records = [r for r in registry.enabled() if r.info.category.value == "metadata"]
-                            if not metadata_records:
-                                console.print("[red]No metadata plugins enabled![/red]")
-                                continue
-                            meta_plugin = metadata_records[0].instance
-                            eps = asyncio.run(meta_plugin.get_episodes(selected_item.id))
+                            from animax.services.metadata_service import get_episodes
+                            eps = asyncio.run(get_episodes(selected_item.id))
                             
                             if eps:
                                 console.print(f"\n[bold cyan]Episodes for {selected_item.title}:[/bold cyan]")

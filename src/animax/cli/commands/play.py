@@ -34,14 +34,9 @@ def register(app: typer.Typer) -> None:
                     console.print(f"[red]Error playing media: {e}[/red]")
                 return
 
-            metadata_records = [r for r in registry.enabled() if r.info.category.value == "metadata"]
-            if not metadata_records:
-                console.print("[red]No metadata plugins enabled![/red]")
-                return
-            
-            meta_plugin = metadata_records[0].instance
             try:
-                item = await meta_plugin.get_details(media_id)
+                from animax.services.metadata_service import get_details
+                item = await get_details(media_id)
             except Exception as e:
                 console.print(f"[red]Failed to fetch metadata for {media_id}: {e}[/red]")
                 return
@@ -79,9 +74,9 @@ def register(app: typer.Typer) -> None:
                     console.print(f"Or download it first using: [bold]anime download '{media_id}'" + (f" --episode {episode}" if episode else "") + "[/bold]\n")
                     return
                 else:
-                    console.print(f"[green]Streaming Magnet link via WebTorrent...[/green]")
+                    console.print(f"[green]Streaming Magnet link via Peerflix...[/green]")
                     import subprocess
-                    cmd = ["npx", "-y", "webtorrent-cli", "download", best_source.url]
+                    cmd = ["npx", "-y", "peerflix", best_source.url]
                     if player == "vlc":
                         cmd.append("--vlc")
                     else:
