@@ -76,7 +76,7 @@ async def resolve_query(query: str, exact: bool = False) -> list[SearchResult]:
         else:
             # Merge plugins and external ids
             existing = seen[key]
-            merged_plugins = tuple(set(existing.source_plugins + item.source_plugins))
+            merged_plugins = list(set(list(existing.source_plugins) + list(item.source_plugins)))
             merged_ids = dict(existing.external_ids)
             merged_ids.update(item.external_ids)
             seen[key] = existing.model_copy(
