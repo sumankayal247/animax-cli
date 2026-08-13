@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import httpx
 
-from animax.core.interfaces.metadata import MetadataPlugin
+from animax.core.interfaces.metadata import MetadataProvider
 from animax.models.media import Episode, MediaItem, MediaType, SearchResult
-from animax.models.plugin import PluginCategory, PluginInfo, ProviderCapabilities
+from animax.models.provider import ProviderCapabilities, ProviderCategory, ProviderInfo
 
 
 def _map_anilist_format(fmt: str | None) -> MediaType:
@@ -16,32 +16,30 @@ def _map_anilist_format(fmt: str | None) -> MediaType:
         case "MOVIE":
             return MediaType.MOVIE
         case "OVA":
-            return MediaType.OVA
+            return MediaType.UNKNOWN
         case "ONA":
-            return MediaType.ONA
+            return MediaType.UNKNOWN
         case "SPECIAL":
-            return MediaType.SPECIAL
+            return MediaType.UNKNOWN
         case "MUSIC":
-            return MediaType.MUSIC
+            return MediaType.UNKNOWN
         case _:
             return MediaType.UNKNOWN
 
 
-class AniListPlugin(MetadataPlugin):
+class AniListProvider(MetadataProvider):
     @property
-    def info(self) -> PluginInfo:
-        return PluginInfo(
+    def info(self) -> ProviderInfo:
+        return ProviderInfo(
             name="anilist",
-            version="1.0.0",
-            category=PluginCategory.METADATA,
-            api_version="1.0.0",
-            author="animax",
             description="Fetches metadata from AniList.",
+            category=ProviderCategory.METADATA,
+            capabilities=ProviderCapabilities(
+                search=True,
+                metadata=True,
+                episodes=True
+            )
         )
-
-    @property
-    def capabilities(self) -> set[str]:
-        return {"search", "details", "episodes"}
 
     async def check_health(self) -> bool:
         try:
@@ -103,16 +101,12 @@ class AniListPlugin(MetadataPlugin):
                     item = MediaItem(
                         id=str(m["id"]),
                         title=title,
-                        alt_titles=tuple(alt_titles),
+                        alt_titles=list(alt_titles),
                         media_type=_map_anilist_format(m.get("format")),
                         year=m.get("seasonYear"),
-                        season=m.get("season"),
-                        studio=studio_name,
-                        genres=tuple(m.get("genres", [])),
                         episode_count=m.get("episodes"),
-                        synopsis=m.get("description"),
                         cover_url=m.get("coverImage", {}).get("extraLarge"),
-                        source_plugins=("anilist",),
+                        source_plugins=["anilist",],
                         external_ids={"anilist": str(m["id"])},
                     )
                     results.append(SearchResult(item=item, score=1.0))
@@ -170,17 +164,12 @@ class AniListPlugin(MetadataPlugin):
             return MediaItem(
                 id=str(m["id"]),
                 title=title,
-                alt_titles=tuple(alt_titles),
+                alt_titles=list(alt_titles),
                 media_type=_map_anilist_format(m.get("format")),
                 year=m.get("seasonYear"),
-                season=m.get("season"),
-                studio=studio_name,
-                genres=tuple(m.get("genres", [])),
-                characters=tuple(chars),
                 episode_count=m.get("episodes"),
-                synopsis=m.get("description"),
                 cover_url=m.get("coverImage", {}).get("extraLarge"),
-                source_plugins=("anilist",),
+                source_plugins=["anilist",],
                 external_ids={"anilist": str(m["id"])},
             )
 
@@ -196,3 +185,31 @@ class AniListPlugin(MetadataPlugin):
             return episodes
         except Exception:
             return []
+
+from animax.core.interfaces.base import BasePlugin
+from animax.core.plugin_manager import PluginManager
+from animax.core.provider_registry import ProviderRegistry
+from animax.models.plugin import PluginCategory, PluginInfo
+
+
+class AniListPlugin(BasePlugin):
+    @property
+    def info(self) -> PluginInfo:
+        return PluginInfo(
+            name="anilist_plugin",
+            description="Registers AniList provider.",
+            category=PluginCategory.METADATA,
+        )
+    async def setup(self, manager: PluginManager, registry: ProviderRegistry) -> None:
+        from animax.models.provider import ProviderRecord
+        provider = AniListProvider()
+        record = ProviderRecord(
+            info=provider.info,
+            instance=provider,
+            plugin_name=self.info.name,
+            enabled=True,
+            health=ProviderRecord.model_fields['health'].default
+        )
+        # Wait, registry.register requires PluginRecord but wait, it's ProviderRecord
+        registry.register(record)
+

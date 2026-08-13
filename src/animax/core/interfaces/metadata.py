@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from abc import abstractmethod
 
-from animax.core.interfaces.base import BasePlugin
+from animax.core.interfaces.provider import BaseProvider
 from animax.models.media import MediaItem, SearchResult
 
 
-class MetadataPlugin(BasePlugin):
+class MetadataProvider(BaseProvider):
     """Looks up canonical media information for a title."""
 
     @abstractmethod

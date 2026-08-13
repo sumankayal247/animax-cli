@@ -6,9 +6,9 @@ import contextlib
 
 import httpx
 
-from animax.core.interfaces.metadata import MetadataPlugin
+from animax.core.interfaces.metadata import MetadataProvider
 from animax.models.media import Episode, MediaItem, MediaType, SearchResult
-from animax.models.plugin import PluginCategory, PluginInfo, ProviderCapabilities
+from animax.models.provider import ProviderCapabilities, ProviderCategory, ProviderInfo
 
 
 def _map_kitsu_subtype(subtype: str | None) -> MediaType:
@@ -21,33 +21,26 @@ def _map_kitsu_subtype(subtype: str | None) -> MediaType:
         case "MOVIE":
             return MediaType.MOVIE
         case "OVA":
-            return MediaType.OVA
+            return MediaType.UNKNOWN
         case "ONA":
-            return MediaType.ONA
+            return MediaType.UNKNOWN
         case "SPECIAL":
-            return MediaType.SPECIAL
+            return MediaType.UNKNOWN
         case "MUSIC":
-            return MediaType.MUSIC
+            return MediaType.UNKNOWN
         case _:
             return MediaType.UNKNOWN
 
 
-class KitsuPlugin(MetadataPlugin):
+class KitsuProvider(MetadataProvider):
     @property
-    def info(self) -> PluginInfo:
-        return PluginInfo(
+    def info(self) -> ProviderInfo:
+        return ProviderInfo(
             name="kitsu",
-            version="1.0.0",
-            category=PluginCategory.METADATA,
-            api_version="1.0.0",
-            author="animax",
-            capabilities=ProviderCapabilities(metadata=True, search=True),
-            description="Fetches metadata from Kitsu REST API.",
+            description="Fetches metadata from Kitsu API.",
+            category=ProviderCategory.METADATA,
+            capabilities=ProviderCapabilities(search=True, metadata=True, episodes=True)
         )
-
-    @property
-    def capabilities(self) -> set[str]:
-        return {"search", "details", "episodes"}
 
     async def check_health(self) -> bool:
         try:
@@ -96,16 +89,13 @@ class KitsuPlugin(MetadataPlugin):
                     item = MediaItem(
                         id=str(m["id"]),
                         title=title,
-                        alt_titles=tuple(alt_titles),
+                        alt_titles=list(alt_titles),
                         media_type=_map_kitsu_subtype(attrs.get("subtype")),
                         year=year,
-                        season=None,
-                        studio=None,  # Kitsu relationships needed for studio/genres, omitting
-                        genres=tuple(),
+                        # Kitsu relationships needed for studio/genres, omitting
                         episode_count=attrs.get("episodeCount"),
-                        synopsis=attrs.get("synopsis"),
                         cover_url=attrs.get("posterImage", {}).get("large"),
-                        source_plugins=("kitsu",),
+                        source_plugins=["kitsu",],
                         external_ids={"kitsu": str(m["id"])},
                     )
                     results.append(SearchResult(item=item, score=1.0))
@@ -145,16 +135,12 @@ class KitsuPlugin(MetadataPlugin):
             return MediaItem(
                 id=str(m["id"]),
                 title=title,
-                alt_titles=tuple(alt_titles),
+                alt_titles=list(alt_titles),
                 media_type=_map_kitsu_subtype(attrs.get("subtype")),
                 year=year,
-                season=None,
-                studio=None,
-                genres=tuple(),
                 episode_count=attrs.get("episodeCount"),
-                synopsis=attrs.get("synopsis"),
                 cover_url=attrs.get("posterImage", {}).get("large"),
-                source_plugins=("kitsu",),
+                source_plugins=["kitsu",],
                 external_ids={"kitsu": str(m["id"])},
             )
 
@@ -176,8 +162,6 @@ class KitsuPlugin(MetadataPlugin):
                             number=float(attrs.get("number", 0)),
                             title=attrs.get("canonicalTitle"),
                             external_id=str(ep["id"]),
-                            synopsis=attrs.get("synopsis"),
-                            duration_minutes=attrs.get("length"),
                         )
                     )
                 return episodes

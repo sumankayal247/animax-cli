@@ -41,7 +41,6 @@ def test_doctor_all_pass(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Non
     monkeypatch.setattr(config_paths, "database_file", lambda: tmp_path / "data" / "animax.db")
 
     result = runner.invoke(app, ["doctor"])
-
     assert result.exit_code == 0
     assert "FAIL" not in result.stdout
     assert "Plugin manager" in result.stdout

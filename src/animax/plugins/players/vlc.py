@@ -3,24 +3,20 @@
 from __future__ import annotations
 
 import asyncio
-import shutil
 import logging
-from typing import Any
+import shutil
 
-from animax.core.interfaces.player import PlayerPlugin
-from animax.models.plugin import PluginCategory, PluginInfo, HealthStatus
+from animax.core.interfaces.player import PlayerProvider
+from animax.models.provider import ProviderCategory, ProviderInfo
 
 logger = logging.getLogger(__name__)
 
-class VLCPlayerPlugin(PlayerPlugin):
+class VLCPlayerProvider(PlayerProvider):
     @property
-    def info(self) -> PluginInfo:
-        return PluginInfo(
+    def info(self) -> ProviderInfo:
+        return ProviderInfo(
             name="vlc",
-            version="1.0.0",
-            category=PluginCategory.PLAYER,
-            api_version="1.0.0",
-            author="animax",
+            category=ProviderCategory.PLAYER,
             description="Uses the VLC media player.",
             priority=20,
         )

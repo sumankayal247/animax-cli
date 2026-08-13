@@ -4,12 +4,12 @@ from __future__ import annotations
 
 from abc import abstractmethod
 
-from animax.core.interfaces.base import BasePlugin
+from animax.core.interfaces.provider import BaseProvider
 from animax.models.download import ContentSource
 from animax.models.media import Episode, MediaItem
 
 
-class StreamingPlugin(BasePlugin):
+class StreamingProvider(BaseProvider):
     """Resolves a direct-play source for a specific episode, for local playback."""
 
     @abstractmethod

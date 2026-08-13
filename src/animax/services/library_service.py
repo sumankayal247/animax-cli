@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
+import time
 from typing import Any
 
-
 from animax.database.connection import connect
-import time
+
 
 async def get_library() -> list[dict[str, Any]]:
     async with connect() as db:

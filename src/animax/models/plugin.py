@@ -17,6 +17,7 @@ if TYPE_CHECKING:
 
 
 class PluginCategory(StrEnum):
+    GENERIC = "generic"
     METADATA = "metadata"
     DOWNLOAD = "download"
     STREAMING = "streaming"

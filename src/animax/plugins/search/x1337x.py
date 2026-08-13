@@ -4,24 +4,21 @@ from __future__ import annotations
 
 import httpx
 
-from animax.core.interfaces.source import SourcePlugin
-from animax.models.download import ContentSource, SourceKind
-from animax.models.media import MediaItem
-from animax.models.plugin import PluginCategory, PluginInfo, ProviderCapabilities
+from animax.core.interfaces.search import SearchProvider
+from animax.models.download import ContentSource
+from animax.models.media import MediaItem, SearchResult
+from animax.models.provider import ProviderCapabilities, ProviderCategory, ProviderInfo
 
 
-class Torrent1337xProvider(SourcePlugin):
+class Torrent1337xProvider(SearchProvider):
     """Searches 1337x.to for torrents."""
 
     @property
-    def info(self) -> PluginInfo:
-        return PluginInfo(
+    def info(self) -> ProviderInfo:
+        return ProviderInfo(
             name="1337x",
-            version="1.0.0",
-            author="animax-cli",
             description="General Torrent search provider using 1337x",
-            category=PluginCategory.SOURCE,
-            api_version="1.0.0",
+            category=ProviderCategory.SOURCE,
             priority=60,
             capabilities=ProviderCapabilities(search=True, download=True, magnet=True),
         )
@@ -39,4 +36,7 @@ class Torrent1337xProvider(SourcePlugin):
     ) -> list[ContentSource]:
         """Resolve a media item and episode into magnet links."""
         # TODO: Implement 1337x HTML scraping in Phase 5
+        return []
+
+    async def find(self, item: MediaItem) -> list[SearchResult]:
         return []

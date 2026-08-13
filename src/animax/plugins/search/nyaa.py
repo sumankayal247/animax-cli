@@ -2,27 +2,25 @@
 
 from __future__ import annotations
 
-import httpx
 import xml.etree.ElementTree as ET
 
-from animax.core.interfaces.source import SourcePlugin
+import httpx
+
+from animax.core.interfaces.search import SearchProvider
 from animax.models.download import ContentSource, SourceKind
-from animax.models.media import MediaItem
-from animax.models.plugin import PluginCategory, PluginInfo, ProviderCapabilities
+from animax.models.media import MediaItem, SearchResult
+from animax.models.provider import ProviderCapabilities, ProviderCategory, ProviderInfo
 
 
-class NyaaProvider(SourcePlugin):
+class NyaaProvider(SearchProvider):
     """Searches Nyaa.si for anime torrents."""
 
     @property
-    def info(self) -> PluginInfo:
-        return PluginInfo(
+    def info(self) -> ProviderInfo:
+        return ProviderInfo(
             name="Nyaa",
-            version="1.0.0",
-            author="animax-cli",
             description="Anime Torrent search provider using Nyaa.si RSS",
-            category=PluginCategory.SOURCE,
-            api_version="1.0.0",
+            category=ProviderCategory.SOURCE,
             priority=50,
             capabilities=ProviderCapabilities(search=True, download=True, magnet=True),
         )
@@ -41,7 +39,7 @@ class NyaaProvider(SourcePlugin):
         if quality:
             query += f" {quality}"
 
-        url = "https://nyaa.si/?page=rss&q=" + httpx.utils.quote(query) + "&c=1_2&f=0"
+        url = "https://nyaa.si/?page=rss&q=" + httpx.quote(query) + "&c=1_2&f=0"
         
         async with httpx.AsyncClient() as client:
             resp = await client.get(url, timeout=10.0)
@@ -51,7 +49,6 @@ class NyaaProvider(SourcePlugin):
         sources: list[ContentSource] = []
         
         for item in root.findall("./channel/item"):
-            title = item.findtext("title")
             link = item.findtext("link")
             
             # Find the magnet link
@@ -73,3 +70,6 @@ class NyaaProvider(SourcePlugin):
                 )
                 
         return sources
+
+    async def find(self, item: MediaItem) -> list[SearchResult]:
+        return []

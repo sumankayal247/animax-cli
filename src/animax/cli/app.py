@@ -37,6 +37,7 @@ def main_callback(
     debug: bool = typer.Option(False, "--debug", help="Enable debug logging and tracebacks."),
 ) -> None:
     import asyncio
+
     from animax.database.connection import initialize
     configure_logging(debug=debug)
     

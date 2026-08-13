@@ -25,16 +25,20 @@ import logging
 import pkgutil
 from pathlib import Path
 from types import ModuleType
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from animax.core.provider_registry import ProviderRegistry
 
 from animax.core.constants import PLUGIN_ENTRY_POINT_GROUP
 from animax.core.errors import PluginValidationError, PluginVersionMismatchError
-from animax.core.events import default_bus, EventBus
+from animax.core.events import EventBus, default_bus
 from animax.core.events.plugin_events import (
+    ProviderHealthChangedEvent,
     ProviderLoadedEvent,
     ProviderRejectedEvent,
-    ProviderHealthChangedEvent,
 )
-from animax.core.interfaces import CATEGORY_INTERFACES, BasePlugin
+from animax.core.interfaces import BasePlugin
 from animax.core.versioning import is_compatible
 from animax.models.plugin import HealthStatus, PluginInfo, PluginRecord, PluginSource
 
@@ -48,10 +52,12 @@ class PluginManager:
         self,
         *,
         plugin_api_version: str,
+        provider_registry: ProviderRegistry,
         user_plugin_dir: Path | None = None,
         event_bus: EventBus | None = None,
     ) -> None:
         self._plugin_api_version = plugin_api_version
+        self._provider_registry = provider_registry
         self._user_plugin_dir = user_plugin_dir
         self._registry: dict[str, PluginRecord] = {}
         self._bus = event_bus or default_bus
@@ -216,15 +222,19 @@ class PluginManager:
             health=HealthStatus.UNKNOWN,
         )
         self._registry[info.name] = record
+        
+        try:
+            await instance.setup(manager=self, registry=self._provider_registry)
+        except Exception as exc:
+            logger.exception("Plugin %r raised during setup", instance)
+            warnings.append(f"{info.name}: setup failed ({exc})")
+            
         await self._bus.publish(ProviderLoadedEvent(record=record))
 
     def _validate(self, instance: BasePlugin, info: PluginInfo) -> None:
-        interface = CATEGORY_INTERFACES.get(info.category.value)
-        if interface is None or not isinstance(instance, interface):
-            raise PluginValidationError(
-                f"{info.name!r} declares category {info.category!r} but does not "
-                f"implement the corresponding interface"
-            )
+        if not isinstance(instance, BasePlugin):
+            raise PluginValidationError(f"{info.name!r} does not implement BasePlugin")
+            
         if not is_compatible(self._plugin_api_version, info.api_version):
             raise PluginVersionMismatchError(
                 f"{info.name!r} targets plugin API {info.api_version}, "

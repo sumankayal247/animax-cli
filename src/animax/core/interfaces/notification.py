@@ -5,7 +5,7 @@ from __future__ import annotations
 from abc import abstractmethod
 from enum import StrEnum
 
-from animax.core.interfaces.base import BasePlugin
+from animax.core.interfaces.provider import BaseProvider
 
 
 class NotificationLevel(StrEnum):
@@ -15,7 +15,7 @@ class NotificationLevel(StrEnum):
     ERROR = "error"
 
 
-class NotificationPlugin(BasePlugin):
+class NotificationProvider(BaseProvider):
     """Delivers a notification to the user through some external channel."""
 
     @abstractmethod

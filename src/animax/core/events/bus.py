@@ -28,12 +28,12 @@ class EventBus:
         self._handlers: dict[type, list[EventHandler[Any]]] = defaultdict(list)
 
     def subscribe(self, event_type: type[TEvent], handler: EventHandler[TEvent]) -> None:
-        self._handlers[event_type].append(handler) # type: ignore
+        self._handlers[event_type].append(handler) 
 
     def unsubscribe(self, event_type: type[TEvent], handler: EventHandler[TEvent]) -> None:
         handlers = self._handlers.get(event_type)
         if handlers and handler in handlers:
-            handlers.remove(handler) # type: ignore
+            handlers.remove(handler) 
 
     async def publish(self, event: Any) -> None:
         event_type = type(event)

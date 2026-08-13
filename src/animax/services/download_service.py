@@ -2,18 +2,16 @@
 from __future__ import annotations
 
 import asyncio
-import time
-import shutil
-import logging
-import uuid
-from collections.abc import Awaitable, Callable
-from pathlib import Path
 from typing import Any
+import logging
+import shutil
+import uuid
+from pathlib import Path
 
 import httpx
 
 from animax.config.loader import load
-from animax.models.download import ContentSource, DownloadTask, DownloadStatus, SourceKind
+from animax.models.download import ContentSource, DownloadStatus, DownloadTask
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +19,7 @@ class DownloadEngine:
     def __init__(self) -> None:
         self.tasks: dict[str, DownloadTask] = {}
         self.active_processes: dict[str, asyncio.subprocess.Process] = {}
-        self.active_tasks: dict[str, asyncio.Task] = {}
+        self.active_tasks: dict[str, asyncio.Task[Any]] = {}
         self.config = load()
 
     async def _db_updater(self, task_id: str, downloaded: int, total: int) -> None:
@@ -128,7 +126,7 @@ class DownloadEngine:
                         await self._db_updater(task.id, task.bytes_downloaded, total)
 
     async def cancel(self, task_id: str) -> None:
-        if task := self.tasks.get(task_id):
+        if self.tasks.get(task_id):
             if process := self.active_processes.get(task_id):
                 process.terminate()
             if asyncio_task := self.active_tasks.get(task_id):

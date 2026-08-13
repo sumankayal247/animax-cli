@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from abc import abstractmethod
 
-from animax.core.interfaces.base import BasePlugin
+from animax.core.interfaces.provider import BaseProvider
 
 
-class AuthenticationPlugin(BasePlugin):
+class AuthenticationProvider(BaseProvider):
     """Manages login/session state for a provider that requires authentication."""
 
     @abstractmethod

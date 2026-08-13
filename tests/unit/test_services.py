@@ -5,23 +5,20 @@ from typing import Any
 import pytest
 
 from animax.core.errors import ServiceError
-from animax.core.interfaces.metadata import MetadataPlugin
-from animax.core.interfaces.search import SearchPlugin
+from animax.core.interfaces.metadata import MetadataProvider
+from animax.core.interfaces.search import SearchProvider
 from animax.models.media import MediaItem, SearchResult
-from animax.models.plugin import PluginCategory, PluginInfo, PluginRecord, PluginSource
+from animax.models.provider import ProviderCategory, ProviderInfo, ProviderRecord
 from animax.services.metadata_service import resolve_query
 from animax.services.search_service import search
 
 
-class FakeMetadataPlugin(MetadataPlugin):
+class FakeMetadataProvider(MetadataProvider):
     @property
-    def info(self) -> PluginInfo:
-        return PluginInfo(
+    def info(self) -> ProviderInfo:
+        return ProviderInfo(
             name="fake_meta",
-            version="1.0",
-            category=PluginCategory.METADATA,
-            api_version="1.0.0",
-            author="test",
+            category=ProviderCategory.METADATA,
             description="test",
         )
 
@@ -45,15 +42,12 @@ class FakeMetadataPlugin(MetadataPlugin):
         return {"search", "details", "episodes"}
 
 
-class FakeSearchPlugin(SearchPlugin):
+class FakeSearchProvider(SearchProvider):
     @property
-    def info(self) -> PluginInfo:
-        return PluginInfo(
+    def info(self) -> ProviderInfo:
+        return ProviderInfo(
             name="fake_search",
-            version="1.0",
-            category=PluginCategory.SEARCH,
-            api_version="1.0.0",
-            author="test",
+            category=ProviderCategory.SEARCH,
             description="test",
         )
 
@@ -65,35 +59,36 @@ class FakeSearchPlugin(SearchPlugin):
 
 @pytest.fixture
 def fake_plugin_manager(monkeypatch: pytest.MonkeyPatch) -> None:
-    info_meta = PluginInfo(
+    info_meta = ProviderInfo(
         name="fake_meta",
-        version="1.0",
-        category=PluginCategory.METADATA,
-        api_version="1.0.0",
-        author="test",
+        category=ProviderCategory.METADATA,
         description="test",
     )
-    info_search = PluginInfo(
+    info_search = ProviderInfo(
         name="fake_search",
-        version="1.0",
-        category=PluginCategory.SEARCH,
-        api_version="1.0.0",
-        author="test",
+        category=ProviderCategory.SEARCH,
         description="test",
     )
 
-    rec_meta = PluginRecord(
-        info=info_meta, instance=FakeMetadataPlugin(), source=PluginSource.BUILTIN
+    rec_meta = ProviderRecord(
+        info=info_meta, instance=FakeMetadataProvider(), plugin_name="animax_builtin"
     )
-    rec_search = PluginRecord(
-        info=info_search, instance=FakeSearchPlugin(), source=PluginSource.BUILTIN
+    rec_search = ProviderRecord(
+        info=info_search, instance=FakeSearchProvider(), plugin_name="animax_builtin"
     )
 
-    async def mock_discover() -> tuple[list[PluginRecord], list[str]]:
-        return [rec_meta, rec_search], []
+    async def mock_discover() -> tuple[list[Any], list[str]]:
+        return [], []
 
+    class MockRegistry:
+        def enabled(self):
+            return [rec_meta, rec_search]
+            
     monkeypatch.setattr("animax.services.metadata_service.discover_plugins", mock_discover)
     monkeypatch.setattr("animax.services.search_service.discover_plugins", mock_discover)
+    
+    monkeypatch.setattr("animax.services.metadata_service.get_provider_registry", lambda: MockRegistry())
+    monkeypatch.setattr("animax.services.search_service.get_provider_registry", lambda: MockRegistry())
 
 
 @pytest.mark.asyncio

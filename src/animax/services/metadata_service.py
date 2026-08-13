@@ -19,9 +19,9 @@ from animax.core.events.metadata_events import (
     SearchRanked,
     SuggestionsGenerated,
 )
-from animax.core.interfaces.metadata import MetadataPlugin
+from animax.core.interfaces.metadata import MetadataProvider
 from animax.models.media import Episode, MediaItem, SearchResult
-from animax.services.plugin_service import discover_plugins
+from animax.services.plugin_service import discover_plugins, get_provider_registry
 
 
 def _normalize_string(text: str) -> str:
@@ -37,10 +37,11 @@ async def resolve_query(query: str, exact: bool = False) -> list[SearchResult]:
         SearchNormalized(original_query=query, normalized_query=normalized_query)
     )
 
-    records, _ = await discover_plugins()
+    await discover_plugins()
+    records = get_provider_registry().enabled()
     enabled = [r for r in records if r.info.category.value == "metadata"]
 
-    async def _query_plugin(plugin: MetadataPlugin, name: str) -> list[SearchResult]:
+    async def _query_plugin(plugin: MetadataProvider, name: str) -> list[SearchResult]:
         await default_bus.publish(ProviderQueryStarted(provider_name=name, query=query))
         results: list[SearchResult] = []
         error: str | None = None
@@ -58,8 +59,8 @@ async def resolve_query(query: str, exact: bool = False) -> list[SearchResult]:
 
     tasks = []
     for record in enabled:
-        plugin = record.plugin
-        if isinstance(plugin, MetadataPlugin):
+        plugin = record.provider
+        if isinstance(plugin, MetadataProvider):
             tasks.append(_query_plugin(plugin, record.info.name))
 
     results_list = await asyncio.gather(*tasks)
@@ -158,7 +159,8 @@ async def get_details(item_id: str, provider: str | None = None) -> MediaItem:
     """Get rich metadata details for an item from a specific provider."""
     await default_bus.publish(MetadataDetailsStarted(item_id=item_id))
 
-    records, _ = await discover_plugins()
+    await discover_plugins()
+    records = get_provider_registry().enabled()
     enabled = [r for r in records if r.info.category.value == "metadata"]
 
     target_plugin = None
@@ -168,7 +170,7 @@ async def get_details(item_id: str, provider: str | None = None) -> MediaItem:
         # Just pick the first available metadata plugin
         target_plugin = enabled[0].plugin if enabled else None
 
-    if not isinstance(target_plugin, MetadataPlugin):
+    if not isinstance(target_plugin, MetadataProvider):
         error = "No suitable metadata plugin found"
         await default_bus.publish(
             MetadataDetailsCompleted(item_id=item_id, success=False, error=error)
@@ -190,7 +192,8 @@ async def get_episodes(item_id: str, provider: str | None = None) -> list[Episod
     """Get episodes for an item from a specific provider."""
     await default_bus.publish(EpisodesRequested(item_id=item_id))
 
-    records, _ = await discover_plugins()
+    await discover_plugins()
+    records = get_provider_registry().enabled()
     enabled = [r for r in records if r.info.category.value == "metadata"]
 
     target_plugin = None
@@ -199,7 +202,7 @@ async def get_episodes(item_id: str, provider: str | None = None) -> list[Episod
     else:
         target_plugin = enabled[0].plugin if enabled else None
 
-    if not isinstance(target_plugin, MetadataPlugin):
+    if not isinstance(target_plugin, MetadataProvider):
         error = "No suitable metadata plugin found"
         await default_bus.publish(
             EpisodesCompleted(item_id=item_id, episode_count=0, success=False, error=error)

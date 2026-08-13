@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from abc import abstractmethod
 
-from animax.core.interfaces.base import BasePlugin
+from animax.core.interfaces.provider import BaseProvider
 
 
-class PlayerPlugin(BasePlugin):
+class PlayerProvider(BaseProvider):
     """Launches a local player for a file path or stream URL."""
 
     @abstractmethod

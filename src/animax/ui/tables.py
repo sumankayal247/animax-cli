@@ -19,7 +19,7 @@ from rich.table import Table
 from animax.models.download import DownloadTask
 from animax.models.library import HistoryEntry, LibraryEntry
 from animax.models.media import MediaItem
-from animax.models.plugin import PluginRecord
+from animax.models.provider import ProviderRecord
 from animax.ui.renderers import styles
 from animax.ui.runtime import get_state
 from animax.ui.status import StatusKind, status_markup
@@ -59,19 +59,13 @@ def build_table(
     return table
 
 
-def plugins_table(records: Sequence[PluginRecord]) -> Table:
-    """Every field a plugin declares: name, version, category, priority,
-    capabilities, status (enabled/shadowed), health, source, API version.
-    Any future provider automatically fits this layout — it's driven
-    entirely by PluginInfo/PluginRecord fields, never a provider name.
-    """
+def plugins_table(records: Sequence[ProviderRecord]) -> Table:
+    """Every field a provider declares."""
     table = Table(title="Plugins", box=_box_style())
     plugin_columns: tuple[tuple[str, Justify], ...] = (
         ("Name", "left"),
         ("Category", "left"),
-        ("Version", "left"),
-        ("API Version", "left"),
-        ("Source", "left"),
+        ("Plugin", "left"),
         ("Priority", "right"),
         ("Capabilities", "left"),
         ("Status", "left"),
@@ -84,17 +78,13 @@ def plugins_table(records: Sequence[PluginRecord]) -> Table:
         status = status_markup(
             "success" if record.enabled else "pending", "enabled" if record.enabled else "disabled"
         )
-        if record.shadowed_by:
-            status += f" [{styles.MUTED}](shadowed by {record.shadowed_by})[/]"
         health_kind: StatusKind = "success" if record.health.value == "healthy" else "warning"
         caps = [k for k, v in record.info.capabilities.model_dump().items() if v]
         capabilities = ", ".join(sorted(caps)) or f"[{styles.MUTED}]—[/]"
         table.add_row(
             record.info.name,
             record.info.category.value,
-            record.info.version,
-            record.info.api_version,
-            record.source.value,
+            record.plugin_name,
             str(record.info.priority),
             capabilities,
             status,

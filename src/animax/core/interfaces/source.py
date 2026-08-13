@@ -9,14 +9,14 @@ from __future__ import annotations
 import abc
 from typing import TYPE_CHECKING
 
-from animax.core.interfaces.base import BasePlugin
+from animax.core.interfaces.provider import BaseProvider
 
 if TYPE_CHECKING:
     from animax.models.download import ContentSource
     from animax.models.media import MediaItem
 
 
-class SourcePlugin(BasePlugin):
+class SourceProvider(BaseProvider):
     """Base class for plugins that resolve video sources."""
 
     @abc.abstractmethod

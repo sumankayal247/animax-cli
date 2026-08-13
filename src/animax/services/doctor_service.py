@@ -14,8 +14,8 @@ from animax.installer.checks import (
     CheckResult,
     check_database,
     check_directory_writable,
-    check_python_version,
     check_plugins,
+    check_python_version,
 )
 
 

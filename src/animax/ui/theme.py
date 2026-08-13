@@ -8,6 +8,7 @@ from rich.theme import Theme
 from animax.ui.capabilities import TerminalCapabilities, get_capabilities
 from animax.ui.runtime import configure
 
+
 def resolve_theme_name(configured: str, capabilities: TerminalCapabilities) -> str:
     if configured in ("light", "dark", "ansi"):
         return configured

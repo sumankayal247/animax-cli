@@ -8,11 +8,11 @@ from __future__ import annotations
 
 from abc import abstractmethod
 
-from animax.core.interfaces.base import BasePlugin
+from animax.core.interfaces.provider import BaseProvider
 from animax.models.media import MediaItem, SearchResult
 
 
-class SearchPlugin(BasePlugin):
+class SearchProvider(BaseProvider):
     """Finds provider-specific listings for a media item."""
 
     @abstractmethod

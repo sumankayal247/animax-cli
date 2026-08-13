@@ -2,15 +2,14 @@
 
 from __future__ import annotations
 
-import typer
-
-from animax.cli.commands._common import not_yet_implemented
-
-
 import asyncio
+
 import rich.console
+import typer
 from rich.table import Table
+
 from animax.services.library_service import get_library
+
 
 def register(app: typer.Typer) -> None:
     @app.command()

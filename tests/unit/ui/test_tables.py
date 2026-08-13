@@ -5,13 +5,12 @@ from rich import box
 from animax.models.download import ContentSource, DownloadStatus, DownloadTask, SourceKind
 from animax.models.library import HistoryEntry, LibraryEntry
 from animax.models.media import MediaItem
-from animax.models.plugin import (
+from animax.models.provider import (
     HealthStatus,
-    PluginCategory,
-    PluginInfo,
-    PluginRecord,
-    PluginSource,
     ProviderCapabilities,
+    ProviderCategory,
+    ProviderInfo,
+    ProviderRecord,
 )
 from animax.ui.runtime import configure
 from animax.ui.tables import (
@@ -52,24 +51,21 @@ def test_build_table_uses_rounded_box_by_default() -> None:
     assert table.box is box.ROUNDED
 
 
-def _plugin_record(name: str = "sample") -> PluginRecord:
-    info = PluginInfo(
+def _plugin_record(name: str = "sample") -> ProviderRecord:
+    info = ProviderInfo(
         name=name,
-        version="1.0.0",
-        author="test",
         description="test plugin",
-        category=PluginCategory.METADATA,
-        api_version="1.0.0",
+        category=ProviderCategory.METADATA,
         capabilities=ProviderCapabilities(search=True),
     )
 
     class _Dummy:
         pass
 
-    return PluginRecord(
+    return ProviderRecord(
         info=info,
         instance=_Dummy(),
-        source=PluginSource.BUILTIN,
+        plugin_name="animax_builtin",
         enabled=True,
         health=HealthStatus.HEALTHY,
     )

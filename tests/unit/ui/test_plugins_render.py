@@ -3,33 +3,29 @@ from __future__ import annotations
 from collections.abc import Callable
 
 import animax.ui.plugins as plugins_module
-from animax.models.plugin import (
+from animax.models.provider import (
     HealthStatus,
-    PluginCategory,
-    PluginInfo,
-    PluginRecord,
-    PluginSource,
     ProviderCapabilities,
+    ProviderCategory,
+    ProviderInfo,
+    ProviderRecord,
 )
 from animax.ui.plugins import render_plugin_table
 
 
-def _record() -> PluginRecord:
-    info = PluginInfo(
+def _record() -> ProviderRecord:
+    info = ProviderInfo(
         name="anilist",
-        version="1.0.0",
-        author="test",
         description="test",
-        category=PluginCategory.METADATA,
-        api_version="1.0.0",
+        category=ProviderCategory.METADATA,
         capabilities=ProviderCapabilities(search=True),
     )
 
     class _Dummy:
         pass
 
-    return PluginRecord(
-        info=info, instance=_Dummy(), source=PluginSource.BUILTIN, health=HealthStatus.HEALTHY
+    return ProviderRecord(
+        info=info, instance=_Dummy(), plugin_name="animax_builtin", health=HealthStatus.HEALTHY
     )
 
 

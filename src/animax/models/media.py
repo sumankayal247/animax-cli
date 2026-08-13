@@ -9,6 +9,7 @@ models; nothing outside a plugin should ever see provider-native shapes.
 from __future__ import annotations
 
 from enum import Enum
+
 from pydantic import BaseModel, Field
 
 

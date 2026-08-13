@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
-from animax.models.provider import HealthStatus, ProviderInfo
+from animax.models.provider import ProviderInfo
 
 
 class BaseProvider(ABC):

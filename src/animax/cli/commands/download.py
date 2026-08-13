@@ -2,18 +2,15 @@
 
 from __future__ import annotations
 
+import asyncio
+
+import rich.console
 import typer
 
-from animax.cli.commands._common import not_yet_implemented
-
-
-import asyncio
-import rich.console
-from animax.services.plugin_service import get_plugin_manager, discover_plugins
-from animax.services.download_service import DownloadEngine
 from animax.models.plugin import PluginCategory
-from animax.core.interfaces.metadata import MetadataPlugin
-from animax.core.interfaces.source import SourcePlugin
+from animax.services.download_service import DownloadEngine
+from animax.services.plugin_service import discover_plugins, get_plugin_manager
+
 
 def register(app: typer.Typer) -> None:
     @app.command()
@@ -55,7 +52,7 @@ def register(app: typer.Typer) -> None:
                 try:
                     res = await source_plugin.resolve_source(item, episode)
                     sources.extend(res)
-                except Exception as e:
+                except Exception:
                     pass
             
             if not sources:

@@ -7,14 +7,14 @@ propagate) and trust the top level to present them well.
 
 from __future__ import annotations
 
+from rich.console import Group
 from rich.panel import Panel
 from rich.traceback import Traceback
-from rich.console import Group
 
-from animax.core.errors import AnimaxError
-from animax.ui.theme import console
 from animax.config.paths import log_dir
+from animax.core.errors import AnimaxError
 from animax.logging_config import log_crash
+from animax.ui.theme import console
 
 
 def render_error(error: AnimaxError, *, debug: bool = False) -> None:

@@ -10,14 +10,13 @@ from animax.core.events import (
     ProviderLoadedEvent,
     ProviderRejectedEvent,
 )
-from animax.core.interfaces import BasePlugin
-from animax.core.interfaces.metadata import MetadataPlugin
+from animax.core.interfaces.base import BasePlugin
 from animax.core.plugin_manager import PluginManager
 from animax.models.media import MediaItem, SearchResult
 from animax.models.plugin import HealthStatus, PluginCategory, PluginInfo, PluginSource
 
 
-class DummyMetadataPlugin(MetadataPlugin):
+class DummyMetadataProvider(BasePlugin):
     def __init__(
         self,
         name: str = "dummy",
@@ -35,9 +34,10 @@ class DummyMetadataPlugin(MetadataPlugin):
         return PluginInfo(
             name=self._name,
             version=self._version,
-            author="test",
             description="A dummy metadata plugin for tests.",
             category=PluginCategory.METADATA,
+            version="1.0.0",
+            author="animax",
             api_version=self._api_version,
             priority=self._priority,
         )
@@ -66,11 +66,11 @@ class NotAPlugin:
     def info(self) -> PluginInfo:
         return PluginInfo(
             name="broken",
-            version="1.0.0",
-            author="test",
             description="",
             category=PluginCategory.METADATA,
-            api_version="1.0.0",
+            version="1.0.0",
+            author="animax",
+            api_version="1.0.0"
         )
 
 
@@ -79,6 +79,8 @@ def make_manager(**kwargs: object) -> PluginManager:
     touch the process-wide default_bus."""
     kwargs.setdefault("plugin_api_version", "1.0.0")
     kwargs.setdefault("event_bus", EventBus())
+    from animax.core.provider_registry import ProviderRegistry
+    kwargs.setdefault("provider_registry", ProviderRegistry())
     return PluginManager(**kwargs)  # type: ignore[arg-type]
 
 
@@ -86,7 +88,7 @@ async def test_register_valid_plugin_adds_to_registry() -> None:
     manager = make_manager()
     warnings: list[str] = []
 
-    await manager._register(DummyMetadataPlugin(), PluginSource.BUILTIN, warnings)
+    await manager._register(DummyMetadataProvider(), PluginSource.BUILTIN, warnings)
 
     record = manager.get("dummy")
     assert record is not None
@@ -111,7 +113,7 @@ async def test_register_rejects_incompatible_api_version() -> None:
     warnings: list[str] = []
 
     await manager._register(
-        DummyMetadataPlugin(api_version="1.0.0"), PluginSource.BUILTIN, warnings
+        DummyMetadataProvider(api_version="1.0.0"), PluginSource.BUILTIN, warnings
     )
 
     assert manager.get("dummy") is None
@@ -122,8 +124,8 @@ async def test_collision_later_source_wins_and_loser_is_shadowed() -> None:
     manager = make_manager()
     warnings: list[str] = []
 
-    builtin = DummyMetadataPlugin(name="dup", version="1.0.0")
-    user = DummyMetadataPlugin(name="dup", version="2.0.0")
+    builtin = DummyMetadataProvider(name="dup", version="1.0.0")
+    user = DummyMetadataProvider(name="dup", version="2.0.0")
     await manager._register(builtin, PluginSource.BUILTIN, warnings)
     await manager._register(user, PluginSource.USER, warnings)
 
@@ -139,10 +141,10 @@ async def test_enabled_sorted_by_priority() -> None:
     warnings: list[str] = []
 
     await manager._register(
-        DummyMetadataPlugin(name="low", priority=50), PluginSource.BUILTIN, warnings
+        DummyMetadataProvider(name="low", priority=50), PluginSource.BUILTIN, warnings
     )
     await manager._register(
-        DummyMetadataPlugin(name="high", priority=10), PluginSource.BUILTIN, warnings
+        DummyMetadataProvider(name="high", priority=10), PluginSource.BUILTIN, warnings
     )
 
     ordered = manager.enabled(category="metadata")
@@ -153,7 +155,7 @@ async def test_enabled_sorted_by_priority() -> None:
 async def test_enable_disable_roundtrip() -> None:
     manager = make_manager()
     warnings: list[str] = []
-    await manager._register(DummyMetadataPlugin(), PluginSource.BUILTIN, warnings)
+    await manager._register(DummyMetadataProvider(), PluginSource.BUILTIN, warnings)
 
     manager.disable("dummy")
     assert manager.enabled() == []
@@ -165,7 +167,7 @@ async def test_enable_disable_roundtrip() -> None:
 async def test_health_check_all_sets_health() -> None:
     manager = make_manager()
     warnings: list[str] = []
-    await manager._register(DummyMetadataPlugin(), PluginSource.BUILTIN, warnings)
+    await manager._register(DummyMetadataProvider(), PluginSource.BUILTIN, warnings)
 
     await manager.health_check_all()
 
@@ -185,7 +187,7 @@ async def test_register_publishes_provider_loaded_event() -> None:
     manager = make_manager(event_bus=bus)
     warnings: list[str] = []
 
-    await manager._register(DummyMetadataPlugin(), PluginSource.BUILTIN, warnings)
+    await manager._register(DummyMetadataProvider(), PluginSource.BUILTIN, warnings)
 
     assert len(received) == 1
     assert received[0].record.info.name == "dummy"
@@ -199,11 +201,11 @@ async def test_register_publishes_provider_rejected_event_on_validation_failure(
         received.append(event)
 
     bus.subscribe(ProviderRejectedEvent, handler)
-    manager = make_manager(plugin_api_version="2.0.0", event_bus=bus)
+    manager = make_manager(plugin_api_event_bus=bus)
     warnings: list[str] = []
 
     await manager._register(
-        DummyMetadataPlugin(api_version="1.0.0"), PluginSource.BUILTIN, warnings
+        DummyMetadataProvider(api_version="1.0.0"), PluginSource.BUILTIN, warnings
     )
 
     assert len(received) == 1
@@ -220,7 +222,7 @@ async def test_health_check_all_publishes_health_changed_event() -> None:
     bus.subscribe(ProviderHealthChangedEvent, handler)
     manager = make_manager(event_bus=bus)
     warnings: list[str] = []
-    await manager._register(DummyMetadataPlugin(), PluginSource.BUILTIN, warnings)
+    await manager._register(DummyMetadataProvider(), PluginSource.BUILTIN, warnings)
 
     await manager.health_check_all()
 
@@ -236,7 +238,7 @@ async def test_load_all_is_idempotent(monkeypatch: pytest.MonkeyPatch) -> None:
     def fake_discover_builtin(package_name: str) -> list[BasePlugin]:
         nonlocal calls
         calls += 1
-        return [DummyMetadataPlugin()]
+        return [DummyMetadataProvider()]
 
     monkeypatch.setattr(manager, "_discover_builtin", fake_discover_builtin)
 
@@ -255,7 +257,7 @@ async def test_reload_forces_fresh_discovery(monkeypatch: pytest.MonkeyPatch) ->
     def fake_discover_builtin(package_name: str) -> list[BasePlugin]:
         nonlocal calls
         calls += 1
-        return [DummyMetadataPlugin()]
+        return [DummyMetadataProvider()]
 
     monkeypatch.setattr(manager, "_discover_builtin", fake_discover_builtin)
 

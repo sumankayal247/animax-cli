@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import typer
 
-from animax.cli.commands._common import not_yet_implemented
 from animax.config import paths as config_paths
 from animax.services.config_service import load_settings
 from animax.ui.theme import console

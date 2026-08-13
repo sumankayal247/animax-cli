@@ -1,3 +1,4 @@
+from typing import Any
 """Business logic around loading and resolving configuration."""
 
 from __future__ import annotations
@@ -13,7 +14,9 @@ def load_settings() -> Settings:
 
 def update_setting(key: str, value: str) -> None:
     import tomllib
+
     import tomli_w
+
     from animax.config.paths import config_file
     
     path = config_file()

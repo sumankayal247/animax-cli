@@ -7,9 +7,13 @@ through these interfaces — never through a concrete provider class.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING
 
-from animax.models.plugin import HealthStatus, PluginInfo
+from animax.models.plugin import PluginInfo
 
+if TYPE_CHECKING:
+    from animax.core.plugin_manager import PluginManager
+    from animax.core.provider_registry import ProviderRegistry
 
 class BasePlugin(ABC):
     """Common contract every Animax-Cli plugin must implement."""
@@ -20,10 +24,10 @@ class BasePlugin(ABC):
         """Static metadata this plugin declares about itself."""
         raise NotImplementedError
 
-    async def setup(self) -> None:
+    async def setup(self, manager: PluginManager, registry: ProviderRegistry) -> None:
         """Called once after the plugin is loaded and validated, before first use.
 
-        Default is a no-op; override to open clients, warm caches, etc.
+        Default is a no-op; override to open clients, warm caches, register providers, etc.
         """
         return None
 

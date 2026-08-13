@@ -2,14 +2,13 @@
 
 from __future__ import annotations
 
+import asyncio
+
+import rich.console
 import typer
 
-from animax.cli.commands._common import not_yet_implemented
-
-
-import asyncio
-import rich.console
 from animax.services.player_service import play_media
+
 
 def register(app: typer.Typer) -> None:
     @app.command()
