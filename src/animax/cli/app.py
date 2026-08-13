@@ -42,7 +42,18 @@ def main_callback(
     configure_logging(debug=debug)
     
     try:
+        from animax.config.paths import database_file
+        db_path = database_file()
+        is_first_run = not db_path.exists()
+        
         asyncio.run(initialize())
+        
+        if is_first_run:
+            from rich.console import Console
+            Console().print("\n[bold green]Welcome to Animax CLI![/bold green] 🎉")
+            Console().print("💡 [cyan]Tip: You can install this CLI globally so you don't need 'uv run'![/cyan]")
+            Console().print("Just run: [bold]uv tool install .[/bold]\n")
+            
     except Exception as e:
         import logging
         logging.getLogger(__name__).warning(f"Failed to initialize database: {e}")
