@@ -81,7 +81,7 @@ def register(app: typer.Typer) -> None:
                 else:
                     console.print(f"[green]Streaming Magnet link via WebTorrent...[/green]")
                     import subprocess
-                    cmd = ["npx", "-y", "webtorrent", "download", best_source.url]
+                    cmd = ["npx", "-y", "webtorrent-cli", "download", best_source.url]
                     if player == "vlc":
                         cmd.append("--vlc")
                     else:
