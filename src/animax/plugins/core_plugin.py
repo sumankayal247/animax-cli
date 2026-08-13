@@ -8,6 +8,7 @@ from animax.core.provider_registry import ProviderRegistry
 # Import all built-in providers
 from animax.plugins.metadata.anilist import AniListProvider
 from animax.plugins.metadata.kitsu import KitsuProvider
+from animax.plugins.metadata.cinemeta import CinemetaProvider
 from animax.plugins.search.nyaa import NyaaProvider
 from animax.plugins.search.x1337x import Torrent1337xProvider
 from animax.plugins.search.thepiratebay import ThePirateBayProvider
@@ -32,6 +33,7 @@ class BuiltinPlugin(BasePlugin):
         providers = [
             AniListProvider(),
             KitsuProvider(),
+            CinemetaProvider(),
             NyaaProvider(),
             Torrent1337xProvider(),
             ThePirateBayProvider(),
