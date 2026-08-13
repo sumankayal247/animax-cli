@@ -57,44 +57,46 @@ def register(app: typer.Typer) -> None:
                     except Exception:
                         pass
             
-            if not sources:
-                console.print(f"[red]No downloadable sources found for Episode {episode}[/red]")
-                return
-                
-            best_source = sources[0]
-            console.print(f"[green]Found source from {best_source.plugin}:[/green] {best_source.url[:60]}...")
-            
-            # Queue download
             engine = DownloadEngine()
-            dest = f"./downloads/{item.title} - {episode:02g}"
-            
-            task = await engine.add_task(best_source, dest, media_id, episode)
-            console.print(f"[yellow]Downloading to {dest}...[/yellow]")
-            
-            # Wait for completion using a progress bar
-            from rich.progress import Progress, TextColumn, BarColumn, TaskProgressColumn
-            
-            with Progress(
-                TextColumn("[progress.description]{task.description}"),
-                BarColumn(),
-                TaskProgressColumn(),
-                console=console,
-            ) as progress:
-                pid = progress.add_task("[cyan]Downloading...", total=100.0)
+            dest = f"./downloads/{item.title}"
+            if item.media_type.value != "Movie":
+                dest += f" - {episode:02g}"
                 
-                while task.status in ("queued", "running"):
-                    progress.update(pid, completed=task.progress)
-                    await asyncio.sleep(0.5)
+            task_success = False
+            
+            for idx, source in enumerate(sources):
+                console.print(f"\n[cyan]Attempting Source {idx+1}/{len(sources)} from {source.plugin}...[/cyan]")
+                task = await engine.add_task(source, dest, media_id, episode)
+                
+                # Wait for completion using a progress bar
+                from rich.progress import Progress, TextColumn, BarColumn, TaskProgressColumn
+                with Progress(
+                    TextColumn("[progress.description]{task.description}"),
+                    BarColumn(),
+                    TaskProgressColumn(),
+                    console=console,
+                ) as progress:
+                    pid = progress.add_task("[cyan]Downloading...", total=100.0)
                     
-                progress.update(pid, completed=task.progress)
-                
-            if task.status == "completed":
-                console.print("[bold green]Download Complete![/bold green]")
-                from animax.services.history_service import log_event
-                from animax.services.library_service import update_progress
-                await log_event(media_id, item.title, episode, "Download", best_source.plugin)
-                await update_progress(media_id, item.title, episode, 0.0, best_source.plugin)
-            else:
-                console.print(f"[bold red]Download failed: {task.error}[/bold red]")
+                    while task.status in ("queued", "running"):
+                        progress.update(pid, completed=task.progress)
+                        await asyncio.sleep(0.5)
+                        
+                    progress.update(pid, completed=task.progress)
+                    
+                if task.status == "completed":
+                    console.print("[bold green]Download Complete![/bold green]")
+                    from animax.services.history_service import log_event
+                    from animax.services.library_service import update_progress
+                    await log_event(media_id, item.title, episode, "Download", source.plugin)
+                    await update_progress(media_id, item.title, episode, 0.0, source.plugin)
+                    task_success = True
+                    break
+                else:
+                    console.print(f"[yellow]Download failed:[/] {task.error}")
+                    console.print("[dim]Trying next source if available...[/dim]")
+                    
+            if not task_success:
+                console.print("\n[bold red]All available sources failed to download![/bold red]")
                 
         asyncio.run(_run())

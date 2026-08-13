@@ -78,8 +78,10 @@ class DownloadEngine:
         # Aria2 will create a directory for the torrent contents.
         args = [
             "aria2c",
-            "--seed-time=0",           # Don't seed after finishing
-            "--bt-stop-timeout=300",   # Stop if metadata not found
+            "--seed-time=0",           
+            "--bt-stop-timeout=60",    # Reduced from 300 to 60 to prevent long hangs
+            "--enable-dht=true",
+            "--dht-listen-port=6881-6999",
             "--dir", str(dest_dir),
             task.source.url,
         ]
@@ -110,6 +112,8 @@ class DownloadEngine:
         self.active_processes.pop(task.id, None)
         
         if process.returncode != 0:
+            if process.returncode == 7:
+                raise RuntimeError("Timeout: Torrent is dead (no seeders) or DHT is blocked on your network.")
             raise RuntimeError(f"aria2c failed with code {process.returncode}")
 
     async def _download_http(self, task: DownloadTask) -> None:
