@@ -35,8 +35,43 @@ class TorrentGalaxyProvider(SearchProvider):
         self, media: MediaItem, episode_num: float, quality: str | None = None
     ) -> list[ContentSource]:
         """Resolve a media item and episode into magnet links."""
-        # TODO: Implement TorrentGalaxy HTML scraping in Phase 5
-        return []
+        from animax.models.media import MediaType
+        import urllib.parse
+        import re
+        from animax.models.download import SourceKind
+
+        clean_title = re.sub(r'[^\w\s]', '', media.title)
+        query = clean_title
+        if media.media_type != MediaType.MOVIE:
+            query += f" {int(episode_num):02d}"
+        if quality:
+            query += f" {quality}"
+
+        url = "https://torrentgalaxy.to/torrents.php?search=" + urllib.parse.quote(query)
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36"
+        }
+        
+        sources: list[ContentSource] = []
+        async with httpx.AsyncClient(headers=headers, follow_redirects=True) as client:
+            try:
+                resp = await client.get(url, timeout=10.0)
+                if resp.status_code == 200:
+                    # TorrentGalaxy often lists magnets directly on the search results page!
+                    magnets = re.findall(r'href="(magnet:\?xt=urn:btih:[a-zA-Z0-9]+[^"]*)"', resp.text)
+                    for magnet in magnets:
+                        sources.append(ContentSource(
+                            url=magnet,
+                            kind=SourceKind.DOWNLOAD,
+                            quality=quality or "unknown",
+                            plugin="TorrentGalaxy",
+                        ))
+                        if len(sources) >= 3:
+                            break
+            except Exception:
+                pass
+                
+        return sources
 
     async def find(self, item: MediaItem) -> list[SearchResult]:
         return []
