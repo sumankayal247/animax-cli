@@ -22,11 +22,12 @@ def register(app: typer.Typer) -> None:
         console = rich.console.Console()
         
         async def _run() -> None:
-            pm = get_plugin_manager()
+            from animax.services.plugin_service import get_provider_registry
+            registry = get_provider_registry()
             await discover_plugins()
             
             # Find a metadata plugin to get details
-            metadata_records = pm.enabled(PluginCategory.METADATA)
+            metadata_records = [r for r in registry.enabled() if r.info.category.value == "metadata"]
             if not metadata_records:
                 console.print("[red]No metadata plugins enabled![/red]")
                 return
@@ -41,7 +42,7 @@ def register(app: typer.Typer) -> None:
             console.print(f"[cyan]Found media:[/cyan] {item.title}")
             
             # Find a source plugin
-            source_records = pm.enabled(PluginCategory.SOURCE)
+            source_records = [r for r in registry.enabled() if r.info.category.value == "source"]
             if not source_records:
                 console.print("[red]No source plugins enabled![/red]")
                 return
