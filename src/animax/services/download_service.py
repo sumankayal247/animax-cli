@@ -3,6 +3,9 @@ from __future__ import annotations
 
 import asyncio
 import time
+import shutil
+import logging
+import uuid
 from collections.abc import Awaitable, Callable
 from pathlib import Path
 from typing import Any
@@ -10,115 +13,127 @@ from typing import Any
 import httpx
 
 from animax.config.loader import load
+from animax.models.download import ContentSource, DownloadTask, DownloadStatus, SourceKind
 
-
-class DownloadSession:
-    """In-memory session to throttle database updates for highly volatile progress."""
-
-    def __init__(
-        self,
-        task_id: str,
-        db_updater: Callable[[str, int, int], Awaitable[None]],
-        checkpoint_interval: float = 5.0,
-    ) -> None:
-        self.task_id = task_id
-        self.db_updater = db_updater
-        self.checkpoint_interval = checkpoint_interval
-        self.last_checkpoint_time = time.monotonic()
-        self.downloaded = 0
-        self.total = 0
-
-    async def update_progress(self, downloaded: int, total: int) -> None:
-        self.downloaded = downloaded
-        self.total = total
-        now = time.monotonic()
-        if now - self.last_checkpoint_time >= self.checkpoint_interval:
-            await self.checkpoint()
-
-    async def checkpoint(self) -> None:
-        await self.db_updater(self.task_id, self.downloaded, self.total)
-        self.last_checkpoint_time = time.monotonic()
-
-    async def pause(self) -> None:
-        await self.checkpoint()
-
-    async def resume(self) -> None:
-        await self.checkpoint()
-
-    async def complete(self) -> None:
-        await self.checkpoint()
-
-    async def cancel(self) -> None:
-        await self.checkpoint()
-
-    async def shutdown(self) -> None:
-        await self.checkpoint()
-
+logger = logging.getLogger(__name__)
 
 class DownloadEngine:
     def __init__(self) -> None:
-        self.queue: list[str] = []
-        self.active_tasks: dict[str, str] = {}
-        self.sessions: dict[str, DownloadSession] = {}
+        self.tasks: dict[str, DownloadTask] = {}
+        self.active_processes: dict[str, asyncio.subprocess.Process] = {}
+        self.active_tasks: dict[str, asyncio.Task] = {}
         self.config = load()
 
     async def _db_updater(self, task_id: str, downloaded: int, total: int) -> None:
+        if task := self.tasks.get(task_id):
+            task.bytes_downloaded = downloaded
+            if total > 0:
+                task.bytes_total = total
+            if task.bytes_total:
+                task.progress = (downloaded / task.bytes_total) * 100
         # TODO: Implement actual SQLite update here
-        pass
 
-    async def download(
-        self, url: str, dest: Path, progress_cb: Callable[..., Any] | None = None, task_id: str = ""
-    ) -> None:
-        session = DownloadSession(task_id, self._db_updater)
-        if task_id:
-            self.sessions[task_id] = session
+    async def add_task(self, source: ContentSource, dest: str, media_id: str, episode: float) -> DownloadTask:
+        task = DownloadTask(
+            id=str(uuid.uuid4()),
+            media_id=media_id,
+            episode=episode,
+            destination=dest,
+            source=source,
+            status=DownloadStatus.QUEUED,
+        )
+        self.tasks[task.id] = task
+        # Automatically start it for now (Phase 5 queueing can be enhanced later)
+        self.active_tasks[task.id] = asyncio.create_task(self._process_task(task))
+        return task
 
+    async def _process_task(self, task: DownloadTask) -> None:
+        task.status = DownloadStatus.RUNNING
         try:
-            async with httpx.AsyncClient() as client, client.stream("GET", url) as response:
+            if task.source.url.startswith("magnet:"):
+                await self._download_magnet(task)
+            else:
+                await self._download_http(task)
+            
+            task.status = DownloadStatus.COMPLETED
+            task.progress = 100.0
+            
+        except asyncio.CancelledError:
+            task.status = DownloadStatus.CANCELLED
+            logger.info(f"Task {task.id} cancelled.")
+        except Exception as e:
+            task.status = DownloadStatus.FAILED
+            task.error = str(e)
+            logger.error(f"Task {task.id} failed: {e}")
+        finally:
+            self.active_tasks.pop(task.id, None)
+
+    async def _download_magnet(self, task: DownloadTask) -> None:
+        if not shutil.which("aria2c"):
+            raise RuntimeError("aria2c is required for magnet link downloads.")
+            
+        dest_path = Path(task.destination)
+        dest_dir = dest_path.parent
+        dest_dir.mkdir(parents=True, exist_ok=True)
+        
+        # We tell aria2c to download the magnet to the destination directory.
+        # Aria2 will create a directory for the torrent contents.
+        args = [
+            "aria2c",
+            "--seed-time=0",           # Don't seed after finishing
+            "--bt-stop-timeout=300",   # Stop if metadata not found
+            "--dir", str(dest_dir),
+            task.source.url,
+        ]
+        
+        process = await asyncio.create_subprocess_exec(
+            *args,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        
+        self.active_processes[task.id] = process
+        
+        # Read aria2c output to update progress (simplified)
+        if process.stdout:
+            while True:
+                line = await process.stdout.readline()
+                if not line:
+                    break
+                # Parse aria2c progress line here if needed
+                
+        await process.wait()
+        self.active_processes.pop(task.id, None)
+        
+        if process.returncode != 0:
+            raise RuntimeError(f"aria2c failed with code {process.returncode}")
+
+    async def _download_http(self, task: DownloadTask) -> None:
+        dest_path = Path(task.destination)
+        dest_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        async with httpx.AsyncClient() as client:
+            async with client.stream("GET", task.source.url) as response:
                 response.raise_for_status()
                 total = int(response.headers.get("content-length", 0))
-                downloaded = 0
-                with open(dest, "wb") as f:
+                task.bytes_total = total
+                
+                with open(dest_path, "wb") as f:
                     async for chunk in response.aiter_bytes():
                         f.write(chunk)
-                        downloaded += len(chunk)
-                        await session.update_progress(downloaded, total)
-                        if progress_cb:
-                            if asyncio.iscoroutinefunction(progress_cb):
-                                await progress_cb(downloaded, total)
-                            else:
-                                progress_cb(downloaded, total)
-            await session.complete()
-        except asyncio.CancelledError:
-            await session.cancel()
-            raise
-        finally:
-            if task_id:
-                self.sessions.pop(task_id, None)
+                        task.bytes_downloaded += len(chunk)
+                        if total:
+                            task.progress = (task.bytes_downloaded / total) * 100
+                            
+                        await self._db_updater(task.id, task.bytes_downloaded, total)
 
-    async def pause(self, task_id: str) -> None:
-        if session := self.sessions.get(task_id):
-            await session.pause()
-        
-    async def resume(self, task_id: str) -> None:
-        if session := self.sessions.get(task_id):
-            await session.resume()
-        
     async def cancel(self, task_id: str) -> None:
-        if session := self.sessions.get(task_id):
-            await session.cancel()
-        
-    async def retry(self, task_id: str) -> None:
-        pass
+        if task := self.tasks.get(task_id):
+            if process := self.active_processes.get(task_id):
+                process.terminate()
+            if asyncio_task := self.active_tasks.get(task_id):
+                asyncio_task.cancel()
 
     async def shutdown(self) -> None:
-        for session in self.sessions.values():
-            await session.shutdown()
-        self.sessions.clear()
-
-
-async def retry_task(task_id: str) -> None:
-    pass
-
-async def resume_task(task_id: str) -> None:
-    pass
+        for task_id in list(self.active_tasks.keys()):
+            await self.cancel(task_id)
