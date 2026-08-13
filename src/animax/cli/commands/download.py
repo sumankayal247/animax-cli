@@ -71,8 +71,8 @@ def register(app: typer.Typer) -> None:
             console.print(f"[yellow]Downloading to {dest}...[/yellow]")
             
             # Wait for completion
-            while task.status == "running":
-                await asyncio.sleep(1.0)
+            while task.status in ("queued", "running"):
+                await asyncio.sleep(0.5)
                 
             if task.status == "completed":
                 console.print("[bold green]Download Complete![/bold green]")
