@@ -54,7 +54,7 @@ class NyaaProvider(SearchProvider):
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         }
         
-        async with httpx.AsyncClient(headers=headers) as client:
+        async with httpx.AsyncClient(headers=headers, follow_redirects=True) as client:
             resp = await client.get(url, timeout=10.0)
             resp.raise_for_status()
             

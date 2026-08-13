@@ -64,7 +64,8 @@ class ThePirateBayProvider(SearchProvider):
                         info_hash = item.get("info_hash")
                         name = item.get("name")
                         if info_hash and info_hash != "0000000000000000000000000000000000000000":
-                            magnet = f"magnet:?xt=urn:btih:{info_hash}&dn={urllib.parse.quote(name)}"
+                            trackers = "&tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337%2Fannounce&tr=udp%3A%2F%2Fopen.stealth.si%3A80%2Fannounce"
+                            magnet = f"magnet:?xt=urn:btih:{info_hash}&dn={urllib.parse.quote(name)}{trackers}"
                             sources.append(ContentSource(
                                 url=magnet,
                                 kind=SourceKind.DOWNLOAD,
