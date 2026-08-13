@@ -1,8 +1,8 @@
-from typing import Any
 """Business logic around loading and resolving configuration."""
 
 from __future__ import annotations
 
+from typing import Any
 from pathlib import Path
 
 from animax.config.loader import ensure_exists
