@@ -16,6 +16,10 @@ def register(app: typer.Typer) -> None:
         from animax.ui.tables import metadata_table
         
         console = Console()
+        
+        # Support using '_' instead of spaces in CLI
+        query = query.replace("_", " ")
+        
         with console.status(f"Searching for '{query}'..."):
             try:
                 results = asyncio.run(search_srv(query))
@@ -27,10 +31,6 @@ def register(app: typer.Typer) -> None:
             console.print("[yellow]No results found.[/yellow]")
             return
             
-        items = [r.item for r in results]
-        table = metadata_table(items)
-        console.print(table)
-        
         while True:
             choices = []
             for r in results:
