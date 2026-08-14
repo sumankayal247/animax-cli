@@ -68,30 +68,13 @@ def register(app: typer.Typer) -> None:
             
             if best_source.url.startswith("magnet:"):
                 import shutil
-                if not shutil.which("npx"):
-                    console.print(f"\n[yellow]Warning:[/yellow] The best source found is a Torrent (Magnet link).")
-                    console.print(f"[red]To stream magnets instantly, you need 'NodeJS' (npx) installed![/red]")
-                    console.print(f"Or download it first using: [bold]anime download '{media_id}'" + (f" --episode {episode}" if episode else "") + "[/bold]\n")
-                    return
-                else:
-                    console.print(f"[green]Streaming Magnet link via Peerflix...[/green]")
-                    console.print(f"[yellow]Connecting to trackers and peers... (This may take a moment. If it hangs, your ISP might be blocking torrents.)[/yellow]")
-                    import subprocess
-                    import sys
-                    import random
-                    
-                    random_port = str(random.randint(50000, 60000))
-                    cmd = ["npx", "-y", "peerflix", best_source.url, "--peer-port", random_port, "--connections", "200"]
-                    if player == "vlc":
-                        cmd.append("--vlc")
-                    else:
-                        cmd.append("--mpv")
-                        
-                    try:
-                        subprocess.run(cmd, stdin=sys.stdin, stdout=sys.stdout, stderr=sys.stderr)
-                    except Exception as e:
-                        console.print(f"[red]Error streaming media: {e}[/red]")
-                    return
+                from animax.services.libtorrent_engine import LibtorrentEngine
+                engine = LibtorrentEngine()
+                dest_dir = f"./downloads/temp_stream"
+                import os
+                os.makedirs(dest_dir, exist_ok=True)
+                await engine.stream(best_source.url, dest_dir, player)
+                return
 
             console.print(f"[green]Playing source from {best_source.plugin}...[/green]")
             try:
