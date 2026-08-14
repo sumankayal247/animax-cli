@@ -50,15 +50,18 @@ def register(app: typer.Typer) -> None:
                 
             sources = []
             with console.status("Resolving streaming sources..."):
-                for record in source_records:
-                    source_plugin = record.instance
+                ep_num = float(episode) if episode else 1.0
+                
+                async def fetch_source(plugin):
                     try:
-                        # If episode is None, it defaults to 1.0 just to get a source
-                        ep_num = float(episode) if episode else 1.0
-                        res = await source_plugin.resolve_source(item, ep_num)
-                        sources.extend(res)
+                        return await asyncio.wait_for(plugin.resolve_source(item, ep_num), timeout=10.0)
                     except Exception:
-                        pass
+                        return []
+                        
+                tasks = [fetch_source(r.instance) for r in source_records]
+                results = await asyncio.gather(*tasks)
+                for res in results:
+                    sources.extend(res)
             
             if not sources:
                 console.print(f"[red]No playable sources found.[/red]")
