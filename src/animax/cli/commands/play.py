@@ -78,7 +78,10 @@ def register(app: typer.Typer) -> None:
                     console.print(f"[yellow]Connecting to trackers and peers... (This may take a moment. If it hangs, your ISP might be blocking torrents.)[/yellow]")
                     import subprocess
                     import sys
-                    cmd = ["npx", "-y", "peerflix", best_source.url]
+                    import random
+                    
+                    random_port = str(random.randint(50000, 60000))
+                    cmd = ["npx", "-y", "peerflix", best_source.url, "--peer-port", random_port, "--connections", "200"]
                     if player == "vlc":
                         cmd.append("--vlc")
                     else:

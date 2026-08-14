@@ -81,7 +81,11 @@ class DownloadEngine:
             "--seed-time=0",           
             "--bt-stop-timeout=60",    # Reduced from 300 to 60 to prevent long hangs
             "--enable-dht=true",
-            "--dht-listen-port=6881-6999",
+            "--dht-listen-port=50000-60000", # Random high port to avoid DPI heuristics
+            "--listen-port=50000-60000",
+            "--bt-require-crypto=true",      # Force Protocol Encryption (MSE/PE)
+            "--bt-min-crypto-level=arc4",
+            "--enable-peer-exchange=true",
             "--dir", str(dest_dir),
             task.source.url,
         ]
